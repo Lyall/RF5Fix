@@ -1,0 +1,39 @@
+name: create-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version number'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: BepInEx 6
+      run: |
+        bepinexurl = $(curl -vs https://builds.bepinex.dev/projects/bepinex_be 2>&1 | grep -Po '(?<=href=")(\/projects\/bepinex_be\/(.*)\/BepInEx_UnityIL2CPP_x64(.*))(?=")' | head -1)"
+        wget $bepinexurl > BepInEx_x64.zip
+
+    - uses: actions/setup-dotnet@v1
+    - run: mkdir -p ${{ github.event.repository.name }}/BepInEx/plugins
+    - run: dotnet build -c Release -o build
+    - run: cp build/${{ github.event.repository.name }}.dll ${{ github.event.repository.name }}/BepInEx/plugins/${{ github.event.repository.name }}.dll
+    - run: unzip BepInEx_x64.zip -d ${{ github.event.repository.name }}
+    - run: touch ${{ github.event.repository.name }}/EXTRACT_TO_GAME_DIRECTORY
+    - run: cd ${{ github.event.repository.name }}; zip -r ../${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip ./*
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: ${{ github.event.inputs.version }}
+        name: "${{ github.event.inputs.version }}"
+        draft: true
+        generateReleaseNotes: true
+        bodyFile: "release_body.md"
+        artifactErrorsFailBuild: true
