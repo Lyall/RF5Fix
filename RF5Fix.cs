@@ -211,12 +211,13 @@ namespace RF5Fix
                 Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
 
                 // Shadows
-                // These are too glitchty right now. Probably need to tweak cascade splitting distance
+                // These are too glitchy right now. Probably need to tweak cascade splitting distance
                 //QualitySettings.shadowCascades = 4; // Default = 2
                 //QualitySettings.shadowDistance = 120f; // Default = 120f
 
                 // LOD Bias
-                QualitySettings.lodBias = 4.0f; // Default = 1.5f
+                // Hard to see much of a difference beyond 9f
+                QualitySettings.lodBias = 9.0f; // Default = 1.5f
 
                 Log.LogInfo("Adjusted graphics settings.");
             }
