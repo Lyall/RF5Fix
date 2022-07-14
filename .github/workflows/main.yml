@@ -2,6 +2,10 @@ name: Publish Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version number'
+        required: true
 
 jobs:
   build:
@@ -24,11 +28,11 @@ jobs:
       id: check-tag
       uses: actions-ecosystem/action-regex-match@v2
       with:
-        text: ${{ steps.get-version.outputs.version }}
+        text: ${{ github.event.inputs.version }}
         regex: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 
     - name: Fail if invalid
-      if: steps.check-tag.outputs.match == ''
+      if: github.event.inputs.version.match == ''
       uses: Actions/github-script@v3
       with:
         script: |
@@ -64,8 +68,7 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         artifacts: "Build/*.zip"
-        tag: ${{ steps.get-version.outputs.version }}
-        commit: ${{ github.ref }}
+        tag: ${{ github.event.inputs.version }}
         artifactErrorsFailBuild: true
         draft: true
         generateReleaseNotes: true
