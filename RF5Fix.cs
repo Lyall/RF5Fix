@@ -75,7 +75,7 @@ namespace RF5Fix
                 Harmony.CreateAndPatchAll(typeof(UltrawidePatches));
             }
 
-            // Run SkipIntroPatch
+            // Run IntroSkipPatch
             if (bIntroSkip.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(IntroSkipPatch));
@@ -130,13 +130,12 @@ namespace RF5Fix
 
             // Span UI fade to black
             [HarmonyPatch(typeof(UIFadeScreen), "ScreenFade")]
-            [HarmonyPatch(typeof(UIFadeScreen), "IsToBlack")]
             [HarmonyPostfix]
 
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
                 __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
-                Log.LogInfo($"UI fade to black spanned.");
+                //Log.LogInfo($"UI fade to black spanned.");
             }
 
             // Span UI load fade
@@ -147,7 +146,6 @@ namespace RF5Fix
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
                 __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
-                // Log spam
                 // Log.LogInfo($"UI Load fade to black spanned.");
             }
 
