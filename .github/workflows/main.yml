@@ -10,62 +10,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      BundleBepInEx : true
-      BepInExVersion : 6
-      BepInExArch : x64
-      BepInExRuntime : IL2CPP
-      PluginName : ${{ github.event.repository.name }}
-      GithubRelease : true
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        submodules: false
-        fetch-depth: 0 # can't shallowly clone due to git versioning
-
-    - name: Check Tag
-      id: check-tag
-      uses: actions-ecosystem/action-regex-match@v2
-      with:
-        text: ${{ github.event.inputs.version }}
-        regex: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
-
+    - uses: actions/checkout@v2
     - uses: actions/setup-dotnet@v1
-
-    - name: BepInEx 6
-      run: |
-        bepinexurl = $(curl -vs https://builds.bepinex.dev/projects/bepinex_be 2>&1 | grep -Po '(?<=href=")(\/projects\/bepinex_be\/(.*)\/BepInEx_Unity${{env.BepInExRuntime}}_${{env.BepInExArch}}(.*))(?=")' | head -1)"
-        wget $bepinexurl > bepinex.zip
-      if: env.BundleBepInEx == 'true' && env.BepInExVersion == '6'
-
-    - name: BepInEx 5
-      shell: pwsh
-      run: |
-        $webData = Invoke-WebRequest -Uri "https://api.github.com/repos/BepInEx/BepInEx/releases/latest"
-        $release = ConvertFrom-Json $webData.content
-        $bepinexurl = $release.assets.browser_download_url -match '${{env.BepInExArch}}'
-        wget $bepinexurl > bepinex.zip
-      if: env.BundleBepInEx == 'true' && env.BepInExVersion == '5'
-
-    - name: Extract BepInEx
-      run: | 
-        mkdir out;
-        unzip BepInEx* -d out;
-      if: env.BundleBepInEx == 'true'      
-    
-    - name: Build & zip
-      run: |
-        dotnet build ${{ github.event.repository.name }}.sln -c Release /p:ReleaseMode=1
-        
-    - name: Publish to Github
-      uses: ncipollo/release-action@v1
+      with: 
+        dotnet-version: '6.0.x'
+    - run: echo "::set-output name=URL::$(curl -vs https://builds.bepinex.dev/projects/bepinex_be 2>&1 | grep -Po '(?<=href=")(\/projects\/bepinex_be\/(.*)\/BepInEx_UnityIL2CPP_x64(.*))(?=")' | head -1)"
+      id: bepinexurl
+    - run: wget https://builds.bepinex.dev${{ steps.bepinexurl.outputs.URL}}
+    - run: mkdir -p ${{ github.event.repository.name }}/BepInEx/plugins
+    - run: dotnet build -c Release -o build
+    - run: cp build/${{ github.event.repository.name }}.dll ${{ github.event.repository.name }}/BepInEx/plugins/${{ github.event.repository.name }}.dll
+    - run: unzip BepInEx* -d ${{ github.event.repository.name }}
+    - run: touch ${{ github.event.repository.name }}/EXTRACT_TO_GAME_DIRECTORY
+    - run: cd ${{ github.event.repository.name }}; zip -r ../${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip ./*
+    - uses: ncipollo/release-action@v1
       with:
-        artifacts: "Build/*.zip"
+        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.event.inputs.version }}
-        artifactErrorsFailBuild: true
+        name: "${{ github.event.inputs.version }}"
         draft: true
         generateReleaseNotes: true
         bodyFile: "release_body.md"
-        allowUpdates: true
-      if: env.GithubRelease == 'true' 
+        artifactErrorsFailBuild: true
