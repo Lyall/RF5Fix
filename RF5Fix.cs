@@ -193,6 +193,7 @@ namespace RF5Fix
                 // Shadows
                 QualitySettings.shadows = ShadowQuality.All;
                 QualitySettings.shadowCascades = 4;
+                QualitySettings.shadowProjection = ShadowProjection.CloseFit; // Shadows get a little buggy at 4 cascades.
 
                 // LOD Bias
                 QualitySettings.lodBias = 4.0f;
