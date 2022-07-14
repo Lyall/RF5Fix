@@ -1,8 +1,10 @@
 # Rune Factory 5 Fix
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/RF5Fix/total.svg)]()
 
-This BepInEx plugin for the game Rune Factory 5 adds:
-- Stuff
+This BepInEx plugin for the game Rune Factory 5 features:
+- Proper ultrawide support with pillarbox removal.
+- Smoother camera movement with a higher update rate.
+
 
 ## Installation
 - Grab the latest release of RF5Fix from [here.](https://github.com/Lyall/RF5Fix/releases)
