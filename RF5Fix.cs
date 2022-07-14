@@ -1,10 +1,13 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.IL2CPP;
+using BepInEx.Logging;
+using HarmonyLib;
+
+
 using UnityEngine;
 using UnityEngine.UI;
-using HarmonyLib;
-using BepInEx.Logging;
+
 
 namespace RF5Fix
 {
@@ -15,6 +18,7 @@ namespace RF5Fix
 
         public static ConfigEntry<bool> bUltrawideFixes;
         public static ConfigEntry<bool> bIntroSkip;
+        public static ConfigEntry<bool> bIncreaseQuality;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bCustomResolution;
         public static ConfigEntry<float> fDesiredResolutionX;
@@ -41,6 +45,11 @@ namespace RF5Fix
                                 "IntroSkip",
                                  true,
                                 "Skip intro logos.");
+
+            bIncreaseQuality = Config.Bind("Increase Graphics Quality",
+                                "Fullscreen",
+                                 true,
+                                "Enables/enhances various aspects of the game to improve graphical quality.");
 
             bCustomResolution = Config.Bind("Set Custom Resolution",
                                 "CustomResolution",
@@ -81,17 +90,22 @@ namespace RF5Fix
                 Harmony.CreateAndPatchAll(typeof(IntroSkipPatch));
             }
 
+            // Run IncreaseQualityPatch
+            if (bIncreaseQuality.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(IncreaseQualityPatch));
+            }
+
             // Unity update rate
             // TODO: Replace this with camera movement interpolation?
             if (fUpdateRate.Value > 50)
             {
-
                 Time.fixedDeltaTime = (float)1 / fUpdateRate.Value;
                 Log.LogInfo($"fixedDeltaTime set to {Time.fixedDeltaTime}");
             }
 
         }
-
+        
         [HarmonyPatch]
         public class UltrawidePatches
         {
@@ -100,7 +114,7 @@ namespace RF5Fix
             public static float AspectMultiplier = NewAspectRatio / DefaultAspectRatio;
 
             // Set screen match mode when object has canvasscaler enabled
-            [HarmonyPatch(typeof(CanvasScaler), "OnEnable")]
+            [HarmonyPatch(typeof(CanvasScaler), nameof(CanvasScaler.OnEnable))]
             [HarmonyPostfix]
             public static void SetScreenMatchMode(CanvasScaler __instance)
             {
@@ -108,9 +122,9 @@ namespace RF5Fix
             }
 
             // ViewportRect
-            [HarmonyPatch(typeof(ViewportRectController), "OnEnable")]
-            [HarmonyPatch(typeof(ViewportRectController), "ResetRect")]
-            [HarmonyPatch(typeof(ViewportRectController), "ResetRectAll")]
+            [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.OnEnable))]
+            [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.ResetRect))]
+            [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.ResetRectAll))]
             [HarmonyPostfix]
             public static void ViewportRectDisable(ViewportRectController __instance)
             {
@@ -119,7 +133,7 @@ namespace RF5Fix
             }
 
             // Letterbox
-            [HarmonyPatch(typeof(LetterBoxController), "OnEnable")]
+            [HarmonyPatch(typeof(LetterBoxController), nameof(LetterBoxController.OnEnable))]
             [HarmonyPostfix]
             public static void LetterboxDisable(LetterBoxController __instance)
             {
@@ -129,9 +143,8 @@ namespace RF5Fix
             }
 
             // Span UI fade to black
-            [HarmonyPatch(typeof(UIFadeScreen), "ScreenFade")]
+            [HarmonyPatch(typeof(UIFadeScreen), nameof(UIFadeScreen.ScreenFade))]
             [HarmonyPostfix]
-
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
                 __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
@@ -140,9 +153,8 @@ namespace RF5Fix
 
             // Span UI load fade
             // Shouldn't really do this on an update method. There should be a better way to do this.
-            [HarmonyPatch(typeof(UILoaderFade), "Update")]
+            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
             [HarmonyPostfix]
-
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
                 __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
@@ -155,12 +167,36 @@ namespace RF5Fix
         public class IntroSkipPatch
         {
             // Intro logos skip
-            [HarmonyPatch(typeof(UILogoControl), "Start")]
+            [HarmonyPatch(typeof(UILogoControl), nameof(UILogoControl.Start))]
             [HarmonyPostfix]
-
             public static void SkipIntroLogos(UILogoControl __instance)
             {
                 __instance.m_mode = UILogoControl.MODE.END;
+                Log.LogInfo("Skipped intro logos.");
+            }
+
+        }
+
+        [HarmonyPatch]
+        public class IncreaseQualityPatch
+        {
+            // Adjust graphical quality
+            [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))]
+            [HarmonyPostfix]
+            public static void AdjustGraphicalQuality(TitleMenu __instance)
+            {
+                // Anisotropic Filtering to 16x
+                QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+                Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
+
+                // Shadows
+                QualitySettings.shadows = ShadowQuality.All;
+                QualitySettings.shadowCascades = 4;
+
+                // LOD Bias
+                QualitySettings.lodBias = 4.0f;
+
+                Log.LogInfo("Adjusted graphics settings.");
             }
         }
 
