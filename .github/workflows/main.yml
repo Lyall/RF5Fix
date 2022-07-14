@@ -31,12 +31,6 @@ jobs:
         text: ${{ github.event.inputs.version }}
         regex: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 
-    - name: Fail if invalid
-      if: github.event.inputs.version.match == ''
-      uses: Actions/github-script@v3
-      with:
-        script: |
-         core.setFailed('Invalid tag')
     - uses: actions/setup-dotnet@v1
 
     - name: BepInEx 6
