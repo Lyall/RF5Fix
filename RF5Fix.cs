@@ -152,8 +152,8 @@ namespace RF5Fix
             }
 
             // Span UI load fade
-            // Shouldn't really do this on an update method. There should be a better way to do this.
-            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
+            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Init))]
+            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.CalcFadeTime))]
             [HarmonyPostfix]
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
@@ -166,6 +166,27 @@ namespace RF5Fix
         [HarmonyPatch]
         public class IntroSkipPatch
         {
+            public static bool IsInAutoSaveInfo;
+
+            // TitleMenu Update
+            // This should be okay as it's only in the title menu and shouldn't tank performance.
+            [HarmonyPatch(typeof(TitleMenu), nameof(TitleMenu.Update))]
+            [HarmonyPostfix]
+            public static void GetTitleState(TitleMenu __instance)
+            {
+                if (__instance.m_mode == TitleMenu.MODE.INIT_OP)
+                {
+                    __instance.m_mode = TitleMenu.MODE.INIT_END_OP;
+                    Log.LogInfo($"Title state = {__instance.m_mode}. Skipping.");
+                }
+
+                if (__instance.m_mode == TitleMenu.MODE.SHOW_SYSTEM_INFOAUTOSAVE)
+                {
+                    Log.LogInfo($"Title state = {__instance.m_mode}. Skipping.");
+                    __instance.m_mode = TitleMenu.MODE.END_SYSTEM;
+                }
+            }
+
             // Intro logos skip
             [HarmonyPatch(typeof(UILogoControl), nameof(UILogoControl.Start))]
             [HarmonyPostfix]
@@ -174,7 +195,6 @@ namespace RF5Fix
                 __instance.m_mode = UILogoControl.MODE.END;
                 Log.LogInfo("Skipped intro logos.");
             }
-
         }
 
         [HarmonyPatch]
@@ -191,14 +211,24 @@ namespace RF5Fix
                 Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
 
                 // Shadows
-                QualitySettings.shadows = ShadowQuality.All;
-                QualitySettings.shadowCascades = 4;
-                QualitySettings.shadowProjection = ShadowProjection.CloseFit; // Shadows get a little buggy at 4 cascades.
+                // These are too glitchty right now. Probably need to tweak cascade splitting distance
+                //QualitySettings.shadowCascades = 4; // Default = 2
+                //QualitySettings.shadowDistance = 120f; // Default = 120f
 
                 // LOD Bias
-                QualitySettings.lodBias = 4.0f;
+                QualitySettings.lodBias = 4.0f; // Default = 1.5f
 
                 Log.LogInfo("Adjusted graphics settings.");
+            }
+
+            // Sun & Moon
+            [HarmonyPatch(typeof(Funly.SkyStudio.OrbitingBody), nameof(Funly.SkyStudio.OrbitingBody.LayoutOribit))]
+            [HarmonyPostfix]
+            public static void AdjustSunMoonLight(Funly.SkyStudio.OrbitingBody __instance)
+            {
+                var light = __instance.BodyLight;
+                light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
+                Log.LogInfo($"Set light.shadowCustomResolution to {light.shadowCustomResolution}.");
             }
         }
 
