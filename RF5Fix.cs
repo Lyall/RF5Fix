@@ -163,5 +163,6 @@ namespace RF5Fix
                 __instance.m_mode = UILogoControl.MODE.END;
             }
         }
+
     }
 }
