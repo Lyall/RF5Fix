@@ -1,5 +1,5 @@
 # Rune Factory 5 Fix
-[![Github All Releases](https://img.shields.io/github/downloads/Lyall/EiyudenChronicleRisingFix/total.svg)]()
+[![Github All Releases](https://img.shields.io/github/downloads/Lyall/RF5Fix/total.svg)]()
 
 This BepInEx plugin for the game Rune Factory 5 adds:
 - Stuff
