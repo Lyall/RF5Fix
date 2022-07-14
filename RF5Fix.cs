@@ -181,6 +181,7 @@ namespace RF5Fix
         public class IncreaseQualityPatch
         {
             // Adjust graphical quality
+            // Doing this on field load is maybe not the best place?
             [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))]
             [HarmonyPostfix]
             public static void AdjustGraphicalQuality(TitleMenu __instance)
