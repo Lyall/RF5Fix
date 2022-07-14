@@ -14,6 +14,7 @@ namespace RF5Fix
         internal static new ManualLogSource Log;
 
         public static ConfigEntry<bool> bUltrawideFixes;
+        public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bCustomResolution;
         public static ConfigEntry<float> fDesiredResolutionX;
@@ -35,6 +36,11 @@ namespace RF5Fix
                                 "UpdateRate",
                                 (float)240,
                                 "Set desired update rate. Default = 50. (You can try raising this to improve smoothness.)");
+
+            bIntroSkip = Config.Bind("Skip Logos",
+                                "IntroSkip",
+                                 true,
+                                "Skip intro logos.");
 
             bCustomResolution = Config.Bind("Set Custom Resolution",
                                 "CustomResolution",
@@ -69,11 +75,17 @@ namespace RF5Fix
                 Harmony.CreateAndPatchAll(typeof(UltrawidePatches));
             }
 
+            // Run SkipIntroPatch
+            if (bIntroSkip.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(IntroSkipPatch));
+            }
+
             // Unity update rate
             // TODO: Replace this with camera movement interpolation?
             if (fUpdateRate.Value > 50)
             {
-                
+
                 Time.fixedDeltaTime = (float)1 / fUpdateRate.Value;
                 Log.LogInfo($"fixedDeltaTime set to {Time.fixedDeltaTime}");
             }
@@ -123,7 +135,7 @@ namespace RF5Fix
 
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
-               __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
                 Log.LogInfo($"UI fade to black spanned.");
             }
 
@@ -139,6 +151,19 @@ namespace RF5Fix
                 // Log.LogInfo($"UI Load fade to black spanned.");
             }
 
+        }
+
+        [HarmonyPatch]
+        public class IntroSkipPatch
+        {
+            // Intro logos skip
+            [HarmonyPatch(typeof(UILogoControl), "Start")]
+            [HarmonyPostfix]
+
+            public static void SkipIntroLogos(UILogoControl __instance)
+            {
+                __instance.m_mode = UILogoControl.MODE.END;
+            }
         }
     }
 }
