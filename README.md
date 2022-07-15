@@ -6,6 +6,7 @@ This BepInEx plugin for the game Rune Factory 5 features:
 - Smoother camera movement with a higher update rate.
 - Intro/logos skip.
 - Graphical tweaks to increase fidelity.
+- Overriding mouse sensitivity.
 
 ## Installation
 - Grab the latest release of RF5Fix from [here.](https://github.com/Lyall/RF5Fix/releases)
