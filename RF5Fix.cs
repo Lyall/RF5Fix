@@ -318,7 +318,7 @@ namespace RF5Fix
                 }
 
                 // Adjust mouse sensitivity
-                if (bMouseSensitivity.Value && iMouseSensitivity.Value > 500)
+                if (bMouseSensitivity.Value)
                 {
                     option.MouseSensitivity = iMouseSensitivity.Value;
                     Log.LogInfo($"Mouse sensitivity override. Value = {option.MouseSensitivity}");
