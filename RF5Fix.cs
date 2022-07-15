@@ -3,8 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.IL2CPP;
 using BepInEx.Logging;
 using HarmonyLib;
-
-
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +20,8 @@ namespace RF5Fix
         public static ConfigEntry<bool> bLetterboxing;
         public static ConfigEntry<bool> bIncreaseQuality;
         public static ConfigEntry<float> fUpdateRate;
+        public static ConfigEntry<bool> bMouseSensitivity;
+        public static ConfigEntry<int> iMouseSensitivity;
         public static ConfigEntry<bool> bCustomResolution;
         public static ConfigEntry<float> fDesiredResolutionX;
         public static ConfigEntry<float> fDesiredResolutionY;
@@ -37,25 +38,35 @@ namespace RF5Fix
                                 true,
                                 "Set to true to enable ultrawide UI fixes.");
 
-            bLetterboxing = Config.Bind("Letterboxing",
+            bLetterboxing = Config.Bind("Ultrawide UI Fixes",
                                 "Letterboxing",
                                  true,
                                 "Letterboxes UI (not gameplay). Set to false to disable letterboxing everywhere.");
 
             fUpdateRate = Config.Bind("Physics Update Rate",
-                                "UpdateRate",
+                                "PhysicsUpdateRate",
                                 (float)240,
                                 "Set desired update rate. Default = 50. (You can try raising this to improve smoothness.)");
 
-            bIntroSkip = Config.Bind("Skip Logos",
+            bIntroSkip = Config.Bind("Intro Skip",
                                 "IntroSkip",
                                  true,
                                 "Skip intro logos.");
 
-            bIncreaseQuality = Config.Bind("Increase Graphics Quality",
-                                "IncreaseQuality",
+            bIncreaseQuality = Config.Bind("Increase Graphical Quality",
+                                "IncreaseGraphicalQuality",
                                  true,
                                 "Enables/enhances various aspects of the game to improve graphical quality.");
+
+            bMouseSensitivity = Config.Bind("Mouse Sensitivity",
+                                "MouseSensitivity.Override",
+                                false, // Disable by default
+                                "Set to true to enable mouse sensitivity override.");
+
+            iMouseSensitivity = Config.Bind("Mouse Sensitivity",
+                                "MouseSensitivity.Value",
+                                (int)100,
+                                "Set desired mouse sensitivity.");
 
             bCustomResolution = Config.Bind("Set Custom Resolution",
                                 "CustomResolution",
@@ -108,6 +119,9 @@ namespace RF5Fix
                 Harmony.CreateAndPatchAll(typeof(IncreaseQualityPatch));
             }
 
+            // Run MiscellaneousPatch
+            Harmony.CreateAndPatchAll(typeof(MiscellaneousPatch));
+
             // Unity update rate
             // TODO: Replace this with camera movement interpolation?
             if (fUpdateRate.Value > 50)
@@ -117,7 +131,7 @@ namespace RF5Fix
             }
 
         }
-        
+
         [HarmonyPatch]
         public class UltrawidePatches
         {
@@ -136,7 +150,6 @@ namespace RF5Fix
             // ViewportRect
             [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.OnEnable))]
             [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.ResetRect))]
-            [HarmonyPatch(typeof(ViewportRectController), nameof(ViewportRectController.ResetRectAll))]
             [HarmonyPostfix]
             public static void ViewportRectDisable(ViewportRectController __instance)
             {
@@ -153,7 +166,7 @@ namespace RF5Fix
                 {
                     // Do nothing if UI letterboxing is enabled
                 }
-                else 
+                else
                 {
                     // If letterboxing is disabled
                     __instance.gameObject.SetActive(false);
@@ -215,8 +228,8 @@ namespace RF5Fix
             }
 
             // Disable Letterboxing
-            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.OnDestroy))] // Calendar UI
             [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))] // Load game
+            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.OnDestroy))] // Calendar UI
             [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.OnDestroy))] // Naming window
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.CloseCamp))] // Camp menu
             [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Close))] // Movie gallery
@@ -266,28 +279,6 @@ namespace RF5Fix
         [HarmonyPatch]
         public class IncreaseQualityPatch
         {
-            // Adjust graphical quality
-            // Doing this on field load is maybe not the best place?
-            [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))]
-            [HarmonyPostfix]
-            public static void AdjustGraphicalQuality(TitleMenu __instance)
-            {
-                // Anisotropic Filtering to 16x
-                QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
-                Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
-
-                // Shadows
-                // These are too glitchy right now. Probably need to tweak cascade splitting distance
-                //QualitySettings.shadowCascades = 4; // Default = 2
-                //QualitySettings.shadowDistance = 120f; // Default = 120f
-
-                // LOD Bias
-                // Hard to see much of a difference beyond 9f
-                QualitySettings.lodBias = 9.0f; // Default = 1.5f
-
-                Log.LogInfo("Adjusted graphics settings.");
-            }
-
             // Sun & Moon
             [HarmonyPatch(typeof(Funly.SkyStudio.OrbitingBody), nameof(Funly.SkyStudio.OrbitingBody.LayoutOribit))]
             [HarmonyPostfix]
@@ -296,8 +287,43 @@ namespace RF5Fix
                 var light = __instance.BodyLight;
                 light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
                 Log.LogInfo($"Set light.shadowCustomResolution to {light.shadowCustomResolution}.");
-            } 
+            }
+        }
 
+        [HarmonyPatch]
+        public class MiscellaneousPatch
+        {
+            // Load game settings
+            [HarmonyPatch(typeof(BootOptionSave), nameof(BootOptionSave.LoadOption))]
+            [HarmonyPostfix]
+            public static void GameSettingsOverride(ref BootOptionData option)
+            {
+                // Graphical adjustments
+                if (bIncreaseQuality.Value)
+                {
+                    // Anisotropic Filtering to 16x
+                    QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+                    Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
+
+                    // Shadows
+                    // These are too glitchy right now. Probably need to tweak cascade splitting distance
+                    //QualitySettings.shadowCascades = 4; // Default = 2
+                    //QualitySettings.shadowDistance = 120f; // Default = 120f
+
+                    // LOD Bias
+                    // Hard to see much of a difference beyond 9f
+                    QualitySettings.lodBias = 9.0f; // Default = 1.5f
+
+                    Log.LogInfo("Adjusted graphics settings.");
+                }
+
+                // Adjust mouse sensitivity
+                if (bMouseSensitivity.Value && iMouseSensitivity.Value > 500)
+                {
+                    option.MouseSensitivity = iMouseSensitivity.Value;
+                    Log.LogInfo($"Mouse sensitivity override. Value = {option.MouseSensitivity}");
+                }
+            }
         }
     }
 }
