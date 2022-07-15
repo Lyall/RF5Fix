@@ -165,7 +165,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
-                //__instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
             }
 
             // Span UI load fade
@@ -173,7 +173,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
-                //__instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
             }
 
         }
