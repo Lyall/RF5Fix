@@ -165,8 +165,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
-                __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
-                //Log.LogInfo($"UI fade to black spanned.");
+                //__instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
             }
 
             // Span UI load fade
@@ -174,8 +173,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
-                __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
-                // Log.LogInfo($"UI Load fade to black spanned.");
+                //__instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
             }
 
         }
@@ -234,8 +232,8 @@ namespace RF5Fix
         {
             public static bool IsInAutoSaveInfo;
 
-            // TitleMenu Update
-            // This should be okay as it's only in the title menu and shouldn't tank performance.
+            // TitleMenu Skip
+            // Should be okay using the update method as it's only in the title menu and shouldn't tank performance.
             [HarmonyPatch(typeof(TitleMenu), nameof(TitleMenu.Update))]
             [HarmonyPostfix]
             public static void GetTitleState(TitleMenu __instance)
