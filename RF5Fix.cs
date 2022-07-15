@@ -206,6 +206,7 @@ namespace RF5Fix
             [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.Start))] // Naming window
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.StartCamp))] // Camp menu
             [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Start))] // Movie gallery
+            [HarmonyPatch(typeof(MapControl), nameof(MapControl.Start))] // Map
             [HarmonyPostfix]
             public static void EnableLetterboxing()
             {
@@ -219,6 +220,7 @@ namespace RF5Fix
             [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.OnDestroy))] // Naming window
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.CloseCamp))] // Camp menu
             [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Close))] // Movie gallery
+            [HarmonyPatch(typeof(MapControl), nameof(MapControl.OnDestroy))] // Map
             [HarmonyPostfix]
             public static void DisableLetterboxing()
             {
