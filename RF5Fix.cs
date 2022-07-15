@@ -18,6 +18,7 @@ namespace RF5Fix
 
         public static ConfigEntry<bool> bUltrawideFixes;
         public static ConfigEntry<bool> bIntroSkip;
+        public static ConfigEntry<bool> bLetterboxing;
         public static ConfigEntry<bool> bIncreaseQuality;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bCustomResolution;
@@ -36,6 +37,11 @@ namespace RF5Fix
                                 true,
                                 "Set to true to enable ultrawide UI fixes.");
 
+            bLetterboxing = Config.Bind("Letterboxing",
+                                "Letterboxing",
+                                 true,
+                                "Letterboxes UI (not gameplay). Set to false to disable letterboxing everywhere.");
+
             fUpdateRate = Config.Bind("Physics Update Rate",
                                 "UpdateRate",
                                 (float)240,
@@ -47,7 +53,7 @@ namespace RF5Fix
                                 "Skip intro logos.");
 
             bIncreaseQuality = Config.Bind("Increase Graphics Quality",
-                                "Fullscreen",
+                                "IncreaseQuality",
                                  true,
                                 "Enables/enhances various aspects of the game to improve graphical quality.");
 
@@ -82,6 +88,12 @@ namespace RF5Fix
             if (bUltrawideFixes.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(UltrawidePatches));
+            }
+
+            // Run LetterboxingPatch
+            if (bLetterboxing.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(LetterboxingPatch));
             }
 
             // Run IntroSkipPatch
@@ -137,9 +149,15 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void LetterboxDisable(LetterBoxController __instance)
             {
-                __instance.gameObject.SetActive(false);
-                Log.LogInfo($"Disabled letterboxing game object.");
-
+                if (bLetterboxing.Value)
+                {
+                    // Do nothing if UI letterboxing is enabled
+                }
+                else 
+                {
+                    // If letterboxing is disabled
+                    __instance.gameObject.SetActive(false);
+                }
             }
 
             // Span UI fade to black
@@ -152,8 +170,7 @@ namespace RF5Fix
             }
 
             // Span UI load fade
-            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Init))]
-            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.CalcFadeTime))]
+            [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
             [HarmonyPostfix]
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
@@ -161,6 +178,55 @@ namespace RF5Fix
                 // Log.LogInfo($"UI Load fade to black spanned.");
             }
 
+        }
+
+        [HarmonyPatch]
+        public class LetterboxingPatch
+        {
+            public static GameObject leftLetterbox;
+            public static GameObject rightLetterbox;
+
+            // Letterbox
+            [HarmonyPatch(typeof(LetterBoxController), nameof(LetterBoxController.OnEnable))]
+            [HarmonyPostfix]
+            public static void LetterboxDisable(LetterBoxController __instance)
+            {
+                if (__instance.gameObject.name == "Left")
+                {
+                    leftLetterbox = __instance.gameObject;
+                    Log.LogInfo($"Assigned letterbox left.");
+                }
+                if (__instance.gameObject.name == "Right")
+                {
+                    rightLetterbox = __instance.gameObject;
+                    Log.LogInfo($"Assigned letterbox right.");
+                }
+            }
+
+            // Enable Letterboxing
+            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.Start))] // Calendar UI
+            [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.Start))] // Naming window
+            [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.StartCamp))] // Camp menu
+            [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Start))] // Movie gallery
+            [HarmonyPostfix]
+            public static void EnableLetterboxing()
+            {
+                leftLetterbox.SetActive(true);
+                rightLetterbox.SetActive(true);
+            }
+
+            // Disable Letterboxing
+            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.OnDestroy))] // Calendar UI
+            [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))] // Load game
+            [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.OnDestroy))] // Naming window
+            [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.CloseCamp))] // Camp menu
+            [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Close))] // Movie gallery
+            [HarmonyPostfix]
+            public static void DisableLetterboxing()
+            {
+                leftLetterbox.SetActive(false);
+                rightLetterbox.SetActive(false);
+            }
         }
 
         [HarmonyPatch]
@@ -230,8 +296,8 @@ namespace RF5Fix
                 var light = __instance.BodyLight;
                 light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
                 Log.LogInfo($"Set light.shadowCustomResolution to {light.shadowCustomResolution}.");
-            }
-        }
+            } 
 
+        }
     }
 }
