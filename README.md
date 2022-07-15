@@ -18,7 +18,7 @@ This BepInEx plugin for the game Rune Factory 5 features:
 ## Known Issues
 Please report any issues you see.
 
-- If you get startup issues try disabling "Show launcher at start" in the game launcher as show in the picture below. 
+- If you get startup issues try disabling "Show launcher at start" in the game launcher as shown in the picture below. 
 
 | ![launcher](https://user-images.githubusercontent.com/695941/179290368-5c491498-76c1-4ca9-8d2c-60b582549a5f.jpg) |
 |:--:|
