@@ -23,4 +23,4 @@ Please report any issues you see.
 
 ## Credits
 - [BepinEx](https://github.com/BepInEx/BepInEx) is licensed under the GNU Lesser General Public License v2.1.
-- [KingKrouch](https://github.com/KingKrouch) for various contributions.
+- @KingKrouch for various contributions.
