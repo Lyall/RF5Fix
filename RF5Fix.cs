@@ -7,7 +7,6 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-
 namespace RF5Fix
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
@@ -19,10 +18,11 @@ namespace RF5Fix
         public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<bool> bLetterboxing;
         public static ConfigEntry<bool> bIncreaseQuality;
+        public static ConfigEntry<bool> bFOVAdjust;
+        public static ConfigEntry<float> fFOVAdjust;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bMouseSensitivity;
         public static ConfigEntry<int> iMouseSensitivity;
-        public static ConfigEntry<bool> bCustomResolution;
         public static ConfigEntry<float> fDesiredResolutionX;
         public static ConfigEntry<float> fDesiredResolutionY;
         public static ConfigEntry<bool> bFullscreen;
@@ -58,6 +58,16 @@ namespace RF5Fix
                                  true,
                                 "Enables/enhances various aspects of the game to improve graphical quality.");
 
+            bFOVAdjust = Config.Bind("FOV Adjustment",
+                                "FOVAdjustment",
+                                false, // Disable by default
+                                "Set to true to enable adjustment of the FOV.");
+
+            fFOVAdjust = Config.Bind("FOV Adjustment",
+                                "FOV.Value",
+                                (float)50,
+                                "Set desired FOV.");
+
             bMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Override",
                                 false, // Disable by default
@@ -67,33 +77,6 @@ namespace RF5Fix
                                 "MouseSensitivity.Value",
                                 (int)100,
                                 "Set desired mouse sensitivity.");
-
-            bCustomResolution = Config.Bind("Set Custom Resolution",
-                                "CustomResolution",
-                                false, // Disable by default as the launcher resolution list will likely be sufficient.
-                                "Enable the usage of a custom resolution.");
-
-            fDesiredResolutionX = Config.Bind("Set Custom Resolution",
-                                "ResolutionWidth",
-                                (float)Display.main.systemWidth, // Set default to display width so we don't leave an unsupported resolution as default.
-                                "Set desired resolution width.");
-
-            fDesiredResolutionY = Config.Bind("Set Custom Resolution",
-                                "ResolutionHeight",
-                                (float)Display.main.systemHeight, // Set default to display height so we don't leave an unsupported resolution as default.
-                                "Set desired resolution height.");
-
-            bFullscreen = Config.Bind("Set Custom Resolution",
-                                "Fullscreen",
-                                 true,
-                                "Set to true for fullscreen or false for windowed.");
-
-            // Set custom resolution
-            if (bCustomResolution.Value)
-            {
-                Screen.SetResolution((int)fDesiredResolutionX.Value, (int)fDesiredResolutionY.Value, bFullscreen.Value);
-                Log.LogInfo($"Custom screen resolution set to {fDesiredResolutionX.Value}x{fDesiredResolutionY.Value}. Fullscreen = {bFullscreen.Value}");
-            }
 
             // Run UltrawidePatches
             if (bUltrawideFixes.Value)
@@ -117,6 +100,12 @@ namespace RF5Fix
             if (bIncreaseQuality.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(IncreaseQualityPatch));
+            }
+
+            // Run FOVPatch
+            if (bFOVAdjust.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(FOVPatch));
             }
 
             // Run MiscellaneousPatch
@@ -169,7 +158,8 @@ namespace RF5Fix
                 else
                 {
                     // If letterboxing is disabled
-                    __instance.gameObject.SetActive(false);
+                    __instance.transform.parent.gameObject.SetActive(false);
+                    Log.LogInfo("Letterboxing disabled. For good.");
                 }
             }
 
@@ -200,7 +190,7 @@ namespace RF5Fix
             // Letterbox
             [HarmonyPatch(typeof(LetterBoxController), nameof(LetterBoxController.OnEnable))]
             [HarmonyPostfix]
-            public static void LetterboxDisable(LetterBoxController __instance)
+            public static void LetterboxAssign(LetterBoxController __instance)
             {
                 if (__instance.gameObject.name == "Left")
                 {
@@ -225,6 +215,7 @@ namespace RF5Fix
             {
                 leftLetterbox.SetActive(true);
                 rightLetterbox.SetActive(true);
+                Log.LogInfo("Enabled UI letterboxing.");
             }
 
             // Disable Letterboxing
@@ -239,6 +230,7 @@ namespace RF5Fix
             {
                 leftLetterbox.SetActive(false);
                 rightLetterbox.SetActive(false);
+                Log.LogInfo("Disabled UI letterboxing.");
             }
         }
 
@@ -284,9 +276,32 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void AdjustSunMoonLight(Funly.SkyStudio.OrbitingBody __instance)
             {
-                var light = __instance.BodyLight;
-                light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                Log.LogInfo($"Set light.shadowCustomResolution to {light.shadowCustomResolution}.");
+                __instance.BodyLight.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
+                Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
+            }
+
+            // RealtimeBakeLight
+            [HarmonyPatch(typeof(RealtimeBakeLight), nameof(RealtimeBakeLight.Start))]
+            [HarmonyPostfix]
+            public static void AdjustLightShadow(RealtimeBakeLight __instance)
+            {
+                __instance.Light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
+                Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
+            }
+        }
+
+        [HarmonyPatch]
+        public class FOVPatch
+        {
+            // Player Tracking Camera FOV
+            //[HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.GetSetting), new Type[] { typeof(Define.TrackinCameraType) })]
+            [HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.GetSetting), new Type[] { })]
+            [HarmonyPostfix]
+            public static void ChangePlayerTrackingFOV(PlayerTrackingCamera __instance)
+            {
+                float FOV = fFOVAdjust.Value;
+                __instance.m_Setting.minFov = Mathf.Clamp(FOV, 1f, 180f);
+                //Log.LogInfo($"PlayerTrackingCamera FOV set to 50 + {fFOVAdjust.Value} = {__instance.m_Setting.minFov}");
             }
         }
 
@@ -311,8 +326,7 @@ namespace RF5Fix
                     //QualitySettings.shadowDistance = 120f; // Default = 120f
 
                     // LOD Bias
-                    // Hard to see much of a difference beyond 9f
-                    QualitySettings.lodBias = 9.0f; // Default = 1.5f
+                    QualitySettings.lodBias = 4.0f; // Default = 1.5f
 
                     Log.LogInfo("Adjusted graphics settings.");
                 }
