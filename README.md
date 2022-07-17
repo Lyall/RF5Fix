@@ -13,6 +13,7 @@ This BepInEx plugin for the game Rune Factory 5 features:
 - Grab the latest release of RF5Fix from [here.](https://github.com/Lyall/RF5Fix/releases)
 - Extract the contents of the release zip in to the game directory.<br />(e.g. "**steamapps\common\Rune Factory 5**" for Steam).
 - Run the game once to generate a config file located at **<GameDirectory>\BepInEx\config\RF5Fix.cfg**
+- The first launch may take a little while as BepInEx does it's magic.
 
 ## Configuration
 - See the generated config file to adjust various aspects of the plugin.
