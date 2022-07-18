@@ -313,7 +313,7 @@ namespace RF5Fix
             {
                 float FOV = fFOVAdjust.Value;
                 __instance.m_Setting.minFov = Mathf.Clamp(FOV, 1f, 180f);
-                Log.LogInfo($"PlayerTrackingCamera FOV set to {__instance.m_Setting.minFov}");
+                //Log.LogInfo($"PlayerTrackingCamera FOV set to {__instance.m_Setting.minFov}");
             }
         }
 
