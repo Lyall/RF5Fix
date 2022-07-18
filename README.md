@@ -2,7 +2,7 @@
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/RF5Fix/total.svg)]()
 
 This BepInEx plugin for the game Rune Factory 5 features:
-- Proper ultrawide support with pillarbox removal.
+- Proper ultrawide and non-16:9 aspect ratio support with pillarbox removal.
 - Smoother camera movement with a higher update rate.
 - Intro/logos skip.
 - Graphical tweaks to increase fidelity.
@@ -28,7 +28,9 @@ Please report any issues you see.
 | Thanks to pho on the WSGF Discord. |
 
 ## Screenshots
-![ezgif-2-f2f4b5f8b5](https://user-images.githubusercontent.com/695941/179136231-ef35cf6d-99cf-46f4-8ff9-e6f34b9a6333.gif)
+| ![ezgif-2-f2f4b5f8b5](https://user-images.githubusercontent.com/695941/179136231-ef35cf6d-99cf-46f4-8ff9-e6f34b9a6333.gif) |
+|:--:|
+| Ultrawide pillarbox removal. | 
 
 ## Credits
 - [BepinEx](https://github.com/BepInEx/BepInEx) is licensed under the GNU Lesser General Public License v2.1.
