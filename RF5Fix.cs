@@ -46,7 +46,7 @@ namespace RF5Fix
             fUpdateRate = Config.Bind("Physics Update Rate",
                                 "PhysicsUpdateRate",
                                 (float)240,
-                                "Set desired update rate. Default = 50. (You can try raising this to improve smoothness.)");
+                                "Set desired update rate. Default = 50. (You can raise this to improve camera smoothness for example.)");
 
             bIntroSkip = Config.Bind("Intro Skip",
                                 "IntroSkip",
@@ -55,12 +55,12 @@ namespace RF5Fix
 
             bIncreaseQuality = Config.Bind("Increase Graphical Quality",
                                 "IncreaseGraphicalQuality",
-                                 false, // Disable by default, performance impact is significant
+                                 false, // Disable by default, performance impact is significant on lower end hardware.
                                 "Enables/enhances various aspects of the game to improve graphical quality.");
 
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
-                                false, // Disable by default
+                                false, // Disable by default.
                                 "Set to true to enable adjustment of the FOV.");
 
             fFOVAdjust = Config.Bind("FOV Adjustment",
@@ -70,7 +70,7 @@ namespace RF5Fix
 
             bMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Override",
-                                false, // Disable by default
+                                false, // Disable by default.
                                 "Set to true to enable mouse sensitivity override.");
 
             iMouseSensitivity = Config.Bind("Mouse Sensitivity",
