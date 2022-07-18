@@ -17,15 +17,16 @@ namespace RF5Fix
         public static ConfigEntry<bool> bUltrawideFixes;
         public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<bool> bLetterboxing;
-        public static ConfigEntry<bool> bIncreaseQuality;
         public static ConfigEntry<bool> bFOVAdjust;
         public static ConfigEntry<float> fFOVAdjust;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bMouseSensitivity;
         public static ConfigEntry<int> iMouseSensitivity;
-        public static ConfigEntry<float> fDesiredResolutionX;
-        public static ConfigEntry<float> fDesiredResolutionY;
-        public static ConfigEntry<bool> bFullscreen;
+        public static ConfigEntry<int> iAnisotropicFiltering;
+        public static ConfigEntry<int> iShadowResolution;
+        public static ConfigEntry<float> fLODBias;
+        public static ConfigEntry<int> iShadowCascades;
+        public static ConfigEntry<float> fShadowDistance;
 
         public override void Load()
         {
@@ -45,18 +46,14 @@ namespace RF5Fix
 
             fUpdateRate = Config.Bind("Physics Update Rate",
                                 "PhysicsUpdateRate",
-                                (float)240,
-                                "Set desired update rate. Default = 50. (You can raise this to improve camera smoothness for example.)");
+                                (float)240, // Default = 50
+                                new ConfigDescription("Set desired update rate. Default = 50. (You can raise this to improve camera smoothness for example.)",
+                                new AcceptableValueRange<float>(1f,9999f)));
 
             bIntroSkip = Config.Bind("Intro Skip",
                                 "IntroSkip",
                                  true,
                                 "Skip intro logos.");
-
-            bIncreaseQuality = Config.Bind("Increase Graphical Quality",
-                                "IncreaseGraphicalQuality",
-                                 false, // Disable by default, performance impact is significant on lower end hardware.
-                                "Enables/enhances various aspects of the game to improve graphical quality.");
 
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
@@ -66,7 +63,8 @@ namespace RF5Fix
             fFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOV.Value",
                                 (float)50,
-                                "Set desired FOV.");
+                                new ConfigDescription("Set desired FOV.", 
+                                new AcceptableValueRange<float>(1f,180f)));
 
             bMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Override",
@@ -75,8 +73,41 @@ namespace RF5Fix
 
             iMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Value",
-                                (int)100,
-                                "Set desired mouse sensitivity.");
+                                (int)100, // Default = 100
+                                new ConfigDescription("Set desired mouse sensitivity.",
+                                new AcceptableValueRange<int>(1,9999)));
+
+            // Graphical Settings
+
+            iAnisotropicFiltering = Config.Bind("Graphical Tweaks", 
+                                "AnisotropicFiltering.Value", 
+                                (int)1, 
+                                new ConfigDescription("Set Anisotropic Filtering level. 16 is recommended for quality.", 
+                                new AcceptableValueRange<int>(1, 16)));
+
+            fLODBias = Config.Bind("Graphical Tweaks",
+                                "LODBias.Value",
+                                (float)1.5f, // Default = 1.5f
+                                new ConfigDescription("Set LOD Bias. Controls distance for level of detail switching. 4 is recommended for quality.",
+                                new AcceptableValueRange<float>(0.1f, 10f)));
+
+            iShadowResolution = Config.Bind("Graphical Tweaks",
+                                "ShadowResolution.Value",
+                                (int)4096, // Default = Very High (4096)
+                                new ConfigDescription("Set Shadow Resolution. 8096 is recommended for quality.",
+                                new AcceptableValueRange<int>(64, 32768)));
+
+            iShadowCascades = Config.Bind("Graphical Tweaks",
+                                "ShadowCascades.Value",
+                                (int)1, // Default = 1
+                                new ConfigDescription("Set number of Shadow Cascades. 4 is recommended for quality but 2 is decent.",
+                                new AcceptableValueList<int>(1, 2, 4)));
+
+            fShadowDistance = Config.Bind("Graphical Tweaks",
+                                "ShadowDistance.Value",
+                                (float)120f, // Default = 120
+                                new ConfigDescription("Set Shadow Distance. Controls distance at which shadows render. 180 is recommended for quality.",
+                                new AcceptableValueRange<float>(0.1f, 999f)));
 
             // Run UltrawidePatches
             if (bUltrawideFixes.Value)
@@ -94,12 +125,6 @@ namespace RF5Fix
             if (bIntroSkip.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(IntroSkipPatch));
-            }
-
-            // Run IncreaseQualityPatch
-            if (bIncreaseQuality.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(IncreaseQualityPatch));
             }
 
             // Run FOVPatch
@@ -248,8 +273,6 @@ namespace RF5Fix
         [HarmonyPatch]
         public class IntroSkipPatch
         {
-            public static bool IsInAutoSaveInfo;
-
             // TitleMenu Skip
             // Should be okay using the update method as it's only in the title menu and shouldn't tank performance.
             [HarmonyPatch(typeof(TitleMenu), nameof(TitleMenu.Update))]
@@ -280,28 +303,6 @@ namespace RF5Fix
         }
 
         [HarmonyPatch]
-        public class IncreaseQualityPatch
-        {
-            // Sun & Moon
-            [HarmonyPatch(typeof(Funly.SkyStudio.OrbitingBody), nameof(Funly.SkyStudio.OrbitingBody.LayoutOribit))]
-            [HarmonyPostfix]
-            public static void AdjustSunMoonLight(Funly.SkyStudio.OrbitingBody __instance)
-            {
-                __instance.BodyLight.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
-            }
-
-            // RealtimeBakeLight
-            [HarmonyPatch(typeof(RealtimeBakeLight), nameof(RealtimeBakeLight.Start))]
-            [HarmonyPostfix]
-            public static void AdjustLightShadow(RealtimeBakeLight __instance)
-            {
-                __instance.Light.shadowCustomResolution = 8192; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
-            }
-        }
-
-        [HarmonyPatch]
         public class FOVPatch
         {
             // Player Tracking Camera FOV
@@ -312,7 +313,7 @@ namespace RF5Fix
             {
                 float FOV = fFOVAdjust.Value;
                 __instance.m_Setting.minFov = Mathf.Clamp(FOV, 1f, 180f);
-                //Log.LogInfo($"PlayerTrackingCamera FOV set to 50 + {fFOVAdjust.Value} = {__instance.m_Setting.minFov}");
+                Log.LogInfo($"PlayerTrackingCamera FOV set to {__instance.m_Setting.minFov}");
             }
         }
 
@@ -324,29 +325,65 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void GameSettingsOverride(ref BootOptionData option)
             {
-                // Graphical adjustments
-                if (bIncreaseQuality.Value)
+                // Anisotropic Filtering
+                if (iAnisotropicFiltering.Value > 0)
                 {
-                    // Anisotropic Filtering to 16x
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
-                    Texture.SetGlobalAnisotropicFilteringLimits(16, 16);
-
-                    // Shadows
-                    // These are too glitchy right now. Probably need to tweak cascade splitting distance
-                    //QualitySettings.shadowCascades = 4; // Default = 2
-                    //QualitySettings.shadowDistance = 120f; // Default = 120f
-
-                    // LOD Bias
-                    QualitySettings.lodBias = 4.0f; // Default = 1.5f
-
-                    Log.LogInfo("Adjusted graphics settings.");
+                    Texture.SetGlobalAnisotropicFilteringLimits(iAnisotropicFiltering.Value, iAnisotropicFiltering.Value);
+                    Log.LogInfo($"Anisotropic filtering force enabled. Value = {iAnisotropicFiltering.Value}");
                 }
 
-                // Adjust mouse sensitivity
+                // Shadows
+                if (fShadowDistance.Value > 0.1f )
+                {
+                    QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
+                }
+                if (iShadowCascades.Value == 4)
+                {
+                    QualitySettings.shadowCascades = 4; // Default = 1
+                    QualitySettings.shadowProjection = ShadowProjection.CloseFit; // Default = StableFit
+                }
+                else if (iShadowCascades.Value == 2)
+                {
+                    QualitySettings.shadowCascades = 2; // Default = 1
+                }
+
+                // LOD Bias
+                if (fLODBias.Value >= 0.1f)
+                {
+                    QualitySettings.lodBias = fLODBias.Value; // Default = 1.5f    
+                    Log.LogInfo($"LOD Bias set to {fLODBias.Value}");
+                }
+                
+                // Mouse Sensitivity
                 if (bMouseSensitivity.Value)
                 {
                     option.MouseSensitivity = iMouseSensitivity.Value;
                     Log.LogInfo($"Mouse sensitivity override. Value = {option.MouseSensitivity}");
+                }
+            }
+
+            // Sun & Moon | Shadow Resolution
+            [HarmonyPatch(typeof(Funly.SkyStudio.OrbitingBody), nameof(Funly.SkyStudio.OrbitingBody.LayoutOribit))]
+            [HarmonyPostfix]
+            public static void AdjustSunMoonLight(Funly.SkyStudio.OrbitingBody __instance)
+            {
+                if (iShadowResolution.Value >= 64)
+                {
+                    __instance.BodyLight.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
+                    Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
+                } 
+            }
+
+            // RealtimeBakeLight | Shadow Resolution
+            [HarmonyPatch(typeof(RealtimeBakeLight), nameof(RealtimeBakeLight.Start))]
+            [HarmonyPostfix]
+            public static void AdjustLightShadow(RealtimeBakeLight __instance)
+            {
+                if (iShadowResolution.Value >= 64)
+                {
+                    __instance.Light.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
+                    Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
                 }
             }
         }
