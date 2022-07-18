@@ -55,7 +55,7 @@ namespace RF5Fix
 
             bIncreaseQuality = Config.Bind("Increase Graphical Quality",
                                 "IncreaseGraphicalQuality",
-                                 true,
+                                 false, // Disable by default, performance impact is significant
                                 "Enables/enhances various aspects of the game to improve graphical quality.");
 
             bFOVAdjust = Config.Bind("FOV Adjustment",
@@ -186,6 +186,8 @@ namespace RF5Fix
         {
             public static GameObject leftLetterbox;
             public static GameObject rightLetterbox;
+            public static GameObject topLetterbox;
+            public static GameObject bottomLetterbox;
 
             // Letterbox
             [HarmonyPatch(typeof(LetterBoxController), nameof(LetterBoxController.OnEnable))]
@@ -202,6 +204,16 @@ namespace RF5Fix
                     rightLetterbox = __instance.gameObject;
                     Log.LogInfo($"Assigned letterbox right.");
                 }
+                if (__instance.gameObject.name == "Top")
+                {
+                    topLetterbox = __instance.gameObject;
+                    Log.LogInfo($"Assigned letterbox top.");
+                }
+                if (__instance.gameObject.name == "Bottom")
+                {
+                    bottomLetterbox = __instance.gameObject;
+                    Log.LogInfo($"Assigned letterbox bottom.");
+                }
             }
 
             // Enable Letterboxing
@@ -215,6 +227,8 @@ namespace RF5Fix
             {
                 leftLetterbox.SetActive(true);
                 rightLetterbox.SetActive(true);
+                topLetterbox.SetActive(true);
+                bottomLetterbox.SetActive(true);
                 Log.LogInfo("Enabled UI letterboxing.");
             }
 
@@ -230,6 +244,8 @@ namespace RF5Fix
             {
                 leftLetterbox.SetActive(false);
                 rightLetterbox.SetActive(false);
+                topLetterbox.SetActive(false);
+                bottomLetterbox.SetActive(false);
                 Log.LogInfo("Disabled UI letterboxing.");
             }
         }
