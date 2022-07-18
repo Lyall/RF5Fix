@@ -177,7 +177,7 @@ namespace RF5Fix
                     // Increase height to scale correctly
                     __instance.BlackOutPanel.transform.localScale = new Vector3(1f, 1 * AspectDivider, 1f);
                 }
-                else
+                else if (NewAspectRatio > DefaultAspectRatio)
                 {
                     // Increase width to scale correctly
                     __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
@@ -195,7 +195,7 @@ namespace RF5Fix
                     // Increase height to scale correctly
                     __instance.gameObject.transform.localScale = new Vector3(1f, 1 * AspectDivider, 1f);
                 }
-                else
+                else if (NewAspectRatio > DefaultAspectRatio)
                 {
                     // Increase width to scale correctly
                     __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
