@@ -125,8 +125,9 @@ namespace RF5Fix
         public class UltrawidePatches
         {
             public static float DefaultAspectRatio = (float)16 / 9;
-            public static float NewAspectRatio = (float)Screen.width / Screen.height; // This should be correct even with a custom resolution applied.
+            public static float NewAspectRatio = (float)Screen.width / Screen.height;
             public static float AspectMultiplier = NewAspectRatio / DefaultAspectRatio;
+            public static float AspectDivider = DefaultAspectRatio / NewAspectRatio;
 
             // Set screen match mode when object has canvasscaler enabled
             [HarmonyPatch(typeof(CanvasScaler), nameof(CanvasScaler.OnEnable))]
@@ -168,15 +169,34 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void UIFadeScreenFix(UIFadeScreen __instance)
             {
-                __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                if (NewAspectRatio < DefaultAspectRatio)
+                {
+                    // Increase height to scale correctly
+                    __instance.BlackOutPanel.transform.localScale = new Vector3(1f, 1 * AspectDivider, 1f);
+                }
+                else
+                {
+                    // Increase width to scale correctly
+                    __instance.BlackOutPanel.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                }
             }
 
             // Span UI load fade
+            // Can't find a better way to hook this. It shouldn't impact performance much and even if it does it's only during UI loading fades.
             [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
             [HarmonyPostfix]
             public static void UILoaderFadeFix(UILoaderFade __instance)
             {
-                __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                if (NewAspectRatio < DefaultAspectRatio)
+                {
+                    // Increase height to scale correctly
+                    __instance.gameObject.transform.localScale = new Vector3(1f, 1 * AspectDivider, 1f);
+                }
+                else
+                {
+                    // Increase width to scale correctly
+                    __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
+                } 
             }
 
         }
@@ -184,36 +204,14 @@ namespace RF5Fix
         [HarmonyPatch]
         public class LetterboxingPatch
         {
-            public static GameObject leftLetterbox;
-            public static GameObject rightLetterbox;
-            public static GameObject topLetterbox;
-            public static GameObject bottomLetterbox;
+            public static GameObject letterboxing;
 
             // Letterbox
             [HarmonyPatch(typeof(LetterBoxController), nameof(LetterBoxController.OnEnable))]
             [HarmonyPostfix]
             public static void LetterboxAssign(LetterBoxController __instance)
             {
-                if (__instance.gameObject.name == "Left")
-                {
-                    leftLetterbox = __instance.gameObject;
-                    Log.LogInfo($"Assigned letterbox left.");
-                }
-                if (__instance.gameObject.name == "Right")
-                {
-                    rightLetterbox = __instance.gameObject;
-                    Log.LogInfo($"Assigned letterbox right.");
-                }
-                if (__instance.gameObject.name == "Top")
-                {
-                    topLetterbox = __instance.gameObject;
-                    Log.LogInfo($"Assigned letterbox top.");
-                }
-                if (__instance.gameObject.name == "Bottom")
-                {
-                    bottomLetterbox = __instance.gameObject;
-                    Log.LogInfo($"Assigned letterbox bottom.");
-                }
+                letterboxing = __instance.transform.parent.gameObject;
             }
 
             // Enable Letterboxing
@@ -225,10 +223,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void EnableLetterboxing()
             {
-                leftLetterbox.SetActive(true);
-                rightLetterbox.SetActive(true);
-                topLetterbox.SetActive(true);
-                bottomLetterbox.SetActive(true);
+                letterboxing.SetActive(true);
                 Log.LogInfo("Enabled UI letterboxing.");
             }
 
@@ -242,10 +237,7 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void DisableLetterboxing()
             {
-                leftLetterbox.SetActive(false);
-                rightLetterbox.SetActive(false);
-                topLetterbox.SetActive(false);
-                bottomLetterbox.SetActive(false);
+                letterboxing.SetActive(false);
                 Log.LogInfo("Disabled UI letterboxing.");
             }
         }
