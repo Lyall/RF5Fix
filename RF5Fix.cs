@@ -94,7 +94,7 @@ namespace RF5Fix
             iShadowResolution = Config.Bind("Graphical Tweaks",
                                 "ShadowResolution.Value",
                                 (int)4096, // Default = Very High (4096)
-                                new ConfigDescription("Set Shadow Resolution. 8096 is recommended for quality.",
+                                new ConfigDescription("Set Shadow Resolution. 4096 is recommended for quality.",
                                 new AcceptableValueRange<int>(64, 32768)));
 
             iShadowCascades = Config.Bind("Graphical Tweaks",
@@ -333,14 +333,17 @@ namespace RF5Fix
                     Log.LogInfo($"Anisotropic filtering force enabled. Value = {iAnisotropicFiltering.Value}");
                 }
 
-                // Shadows
+                // Shadow Distance
                 if (fShadowDistance.Value > 0.1f )
                 {
                     QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
                 }
+
+                // Shadow Cascades
                 if (iShadowCascades.Value == 4)
                 {
                     QualitySettings.shadowCascades = 4; // Default = 1
+                    // Need to set ShadowProjection to CloseFit or we get visual glitches at 4 cascades.
                     QualitySettings.shadowProjection = ShadowProjection.CloseFit; // Default = StableFit
                 }
                 else if (iShadowCascades.Value == 2)
