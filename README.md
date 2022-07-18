@@ -15,6 +15,15 @@ This BepInEx plugin for the game Rune Factory 5 features:
 - Run the game once to generate a config file located at **<GameDirectory>\BepInEx\config\RF5Fix.cfg**
 - The first launch may take a little while as BepInEx does it's magic.
 
+### Linux
+- If you are running Linux (for example with the Steam Deck) then the game needs to have it's launch option changed to load BepInEx.
+- You can do this by going to the game properties in Steam and finding "LAUNCH OPTIONS".
+- Make sure the launch option is set to: ```WINEDLLOVERRIDES="winhttp=n,b" %command%```
+
+| ![steam launch options](https://user-images.githubusercontent.com/695941/179568974-6697bfcf-b67d-441c-9707-88cd3c72a104.jpeg) |
+|:--:|
+| Steam launch options. |
+
 ## Configuration
 - See the generated config file to adjust various aspects of the plugin.
 
