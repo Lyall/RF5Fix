@@ -134,7 +134,10 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void SetScreenMatchMode(CanvasScaler __instance)
             {
-                __instance.m_ScreenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+                if (NewAspectRatio > DefaultAspectRatio || NewAspectRatio < DefaultAspectRatio)
+                {
+                    __instance.m_ScreenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+                }
             }
 
             // ViewportRect
