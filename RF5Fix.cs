@@ -115,7 +115,7 @@ namespace RF5Fix
                                 "ShadowDistance.Value",
                                 (float)120f, // Default = 120
                                 new ConfigDescription("Set Shadow Distance. Controls distance at which shadows render. 180 is recommended for quality.",
-                                new AcceptableValueRange<float>(0.1f, 999f)));
+                                new AcceptableValueRange<float>(1f, 999f)));
 
             // Run UltrawidePatches
             if (bUltrawideFixes.Value)
