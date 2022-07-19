@@ -347,6 +347,13 @@ namespace RF5Fix
                     Log.LogInfo($"Shadow Cascades set to {QualitySettings.shadowCascades}");
                 }
 
+                // Shadow Distance
+                if (fShadowDistance.Value > 0.1f)
+                {
+                    QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
+                    Log.LogInfo($"Shadow Distance set to {QualitySettings.shadowDistance}");
+                }
+
                 // LOD Bias
                 if (fLODBias.Value >= 0.1f)
                 {
