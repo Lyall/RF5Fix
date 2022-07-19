@@ -321,9 +321,9 @@ namespace RF5Fix
         public class MiscellaneousPatch
         {
             // Load game settings
-            [HarmonyPatch(typeof(BootOptionSave), nameof(BootOptionSave.LoadOption))]
+            [HarmonyPatch(typeof(BootSystem), nameof(BootSystem.ApplyOption))]
             [HarmonyPostfix]
-            public static void GameSettingsOverride(ref BootOptionData option)
+            public static void GameSettingsOverride(BootSystem __instance)
             {
                 // Anisotropic Filtering
                 if (iAnisotropicFiltering.Value > 0)
@@ -333,22 +333,18 @@ namespace RF5Fix
                     Log.LogInfo($"Anisotropic filtering force enabled. Value = {iAnisotropicFiltering.Value}");
                 }
 
-                // Shadow Distance
-                if (fShadowDistance.Value > 0.1f )
-                {
-                    QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
-                }
-
                 // Shadow Cascades
                 if (iShadowCascades.Value == 4)
                 {
                     QualitySettings.shadowCascades = 4; // Default = 1
                     // Need to set ShadowProjection to CloseFit or we get visual glitches at 4 cascades.
                     QualitySettings.shadowProjection = ShadowProjection.CloseFit; // Default = StableFit
+                    Log.LogInfo($"Shadow Cascades set to {QualitySettings.shadowCascades}. ShadowProjection = CloseFit");
                 }
                 else if (iShadowCascades.Value == 2)
                 {
                     QualitySettings.shadowCascades = 2; // Default = 1
+                    Log.LogInfo($"Shadow Cascades set to {QualitySettings.shadowCascades}");
                 }
 
                 // LOD Bias
@@ -361,8 +357,8 @@ namespace RF5Fix
                 // Mouse Sensitivity
                 if (bMouseSensitivity.Value)
                 {
-                    option.MouseSensitivity = iMouseSensitivity.Value;
-                    Log.LogInfo($"Mouse sensitivity override. Value = {option.MouseSensitivity}");
+                    BootSystem.m_Option.MouseSensitivity = iMouseSensitivity.Value;
+                    Log.LogInfo($"Mouse sensitivity override. Value = {BootSystem.m_Option.MouseSensitivity}");
                 }
             }
 
