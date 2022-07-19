@@ -25,6 +25,7 @@ namespace RF5Fix
         public static ConfigEntry<int> iAnisotropicFiltering;
         public static ConfigEntry<int> iShadowResolution;
         public static ConfigEntry<float> fLODBias;
+        public static ConfigEntry<float> fNPCDistance;
         public static ConfigEntry<int> iShadowCascades;
         public static ConfigEntry<float> fShadowDistance;
 
@@ -90,6 +91,13 @@ namespace RF5Fix
                                 (float)1.5f, // Default = 1.5f
                                 new ConfigDescription("Set LOD Bias. Controls distance for level of detail switching. 4 is recommended for quality.",
                                 new AcceptableValueRange<float>(0.1f, 10f)));
+
+            fNPCDistance = Config.Bind("Graphical Tweaks",
+                                "NPCDistance.Value",
+                                (float)2025f, // Default = 2025f (High)
+                                new ConfigDescription("Set NPC Draw Distance. Controls distance at which NPCs render. 10000 is recommended for quality.",
+                                new AcceptableValueRange<float>(1f, 100000f)));
+
 
             iShadowResolution = Config.Bind("Graphical Tweaks",
                                 "ShadowResolution.Value",
@@ -348,7 +356,7 @@ namespace RF5Fix
                 }
 
                 // Shadow Distance
-                if (fShadowDistance.Value > 0.1f)
+                if (fShadowDistance.Value >= 0.1f)
                 {
                     QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
                     Log.LogInfo($"Shadow Distance set to {QualitySettings.shadowDistance}");
@@ -360,13 +368,22 @@ namespace RF5Fix
                     QualitySettings.lodBias = fLODBias.Value; // Default = 1.5f    
                     Log.LogInfo($"LOD Bias set to {fLODBias.Value}");
                 }
-                
+
                 // Mouse Sensitivity
                 if (bMouseSensitivity.Value)
                 {
                     BootSystem.m_Option.MouseSensitivity = iMouseSensitivity.Value;
                     Log.LogInfo($"Mouse sensitivity override. Value = {BootSystem.m_Option.MouseSensitivity}");
                 }
+
+                // NPC Distances
+                if (fNPCDistance.Value >= 1f)
+                {
+                    NpcSetting.ShowDistance = fNPCDistance.Value;
+                    NpcSetting.HideDistance = fNPCDistance.Value;
+                    Log.LogInfo($"NPC Distance set to {NpcSetting.ShowDistance}");
+                }
+
             }
 
             // Sun & Moon | Shadow Resolution
