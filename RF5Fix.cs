@@ -356,7 +356,7 @@ namespace RF5Fix
                 }
 
                 // Shadow Distance
-                if (fShadowDistance.Value >= 0.1f)
+                if (fShadowDistance.Value >= 1f)
                 {
                     QualitySettings.shadowDistance = fShadowDistance.Value; // Default = 120f
                     Log.LogInfo($"Shadow Distance set to {QualitySettings.shadowDistance}");
