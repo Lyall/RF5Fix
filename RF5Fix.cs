@@ -28,6 +28,10 @@ namespace RF5Fix
         public static ConfigEntry<float> fNPCDistance;
         public static ConfigEntry<int> iShadowCascades;
         public static ConfigEntry<float> fShadowDistance;
+        public static ConfigEntry<bool> bCustomResolution;
+        public static ConfigEntry<float> fDesiredResolutionX;
+        public static ConfigEntry<float> fDesiredResolutionY;
+        public static ConfigEntry<int> iWindowMode;
 
         public override void Load()
         {
@@ -35,6 +39,7 @@ namespace RF5Fix
             Log = base.Log;
             Log.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
 
+            // Features
             bUltrawideFixes = Config.Bind("Ultrawide UI Fixes",
                                 "UltrawideFixes",
                                 true,
@@ -56,6 +61,8 @@ namespace RF5Fix
                                  true,
                                 "Skip intro logos.");
 
+
+            // Game Overrides
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
                                 false, // Disable by default.
@@ -78,8 +85,30 @@ namespace RF5Fix
                                 new ConfigDescription("Set desired mouse sensitivity.",
                                 new AcceptableValueRange<int>(1,9999)));
 
-            // Graphical Settings
+            // Custom Resolution
+            bCustomResolution = Config.Bind("Set Custom Resolution",
+                                "CustomResolution",
+                                 false, // Disable by default as launcher should suffice.
+                                "Set to true to enable the custom resolution below.");
 
+            fDesiredResolutionX = Config.Bind("Set Custom Resolution",
+                                "ResolutionWidth",
+                                (float)Display.main.systemWidth, // Set default to display width so we don't leave an unsupported resolution as default.
+                                "Set desired resolution width.");
+
+            fDesiredResolutionY = Config.Bind("Set Custom Resolution",
+                                "ResolutionHeight",
+                                (float)Display.main.systemHeight, // Set default to display height so we don't leave an unsupported resolution as default.
+                                "Set desired resolution height.");
+
+            iWindowMode = Config.Bind("Set Custom Resolution",
+                                "WindowMode",
+                                 1,
+                                new ConfigDescription("Set window mode. 1 = Fullscreen, 2 = Borderless, 3 = Windowed.",
+                                new AcceptableValueRange<int>(1, 3)));
+
+
+            // Graphical Settings
             iAnisotropicFiltering = Config.Bind("Graphical Tweaks", 
                                 "AnisotropicFiltering.Value", 
                                 (int)1, 
@@ -116,6 +145,12 @@ namespace RF5Fix
                                 (float)120f, // Default = 120
                                 new ConfigDescription("Set Shadow Distance. Controls distance at which shadows render. 180 is recommended for quality.",
                                 new AcceptableValueRange<float>(1f, 999f)));
+
+            // Run CustomResolutionPatch
+            if (bCustomResolution.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(CustomResolutionPatch));
+            }
 
             // Run UltrawidePatches
             if (bUltrawideFixes.Value)
@@ -248,6 +283,7 @@ namespace RF5Fix
             public static void LetterboxAssign(LetterBoxController __instance)
             {
                 letterboxing = __instance.transform.parent.gameObject;
+                Log.LogInfo($"Letterboxing assigned.");
             }
 
             // Enable Letterboxing
@@ -322,6 +358,41 @@ namespace RF5Fix
                 float FOV = fFOVAdjust.Value;
                 __instance.m_Setting.minFov = Mathf.Clamp(FOV, 1f, 180f);
                 //Log.LogInfo($"PlayerTrackingCamera FOV set to {__instance.m_Setting.minFov}");
+            }
+        }
+
+        [HarmonyPatch]
+        public class CustomResolutionPatch
+        {
+            [HarmonyPatch(typeof(ScreenUtil), nameof(ScreenUtil.SetResolution), new Type[] { typeof(int), typeof(int), typeof(BootOption.WindowMode) })]
+            [HarmonyPrefix]
+            public static bool SetCustomRes(ref int __0, ref int __1, ref BootOption.WindowMode __2)
+            {
+                BootOption.WindowMode fullscreenMode;
+                switch (iWindowMode.Value)
+                {
+                    case 1: 
+                        fullscreenMode = BootOption.WindowMode.FullScreen;
+                        break;
+                    case 2:
+                        fullscreenMode = BootOption.WindowMode.Borderless;
+                        break;
+                    case 3:
+                        fullscreenMode = BootOption.WindowMode.Window;
+                        break;
+                    default:
+                        fullscreenMode = BootOption.WindowMode.FullScreen;
+                        break;
+                }
+
+                Log.LogInfo($"Original resolution is {__0}x{__1}. Fullscreen = {__2}.");
+
+                __0 = (int)fDesiredResolutionX.Value;
+                __1 = (int)fDesiredResolutionY.Value;
+                __2 = fullscreenMode;
+
+                Log.LogInfo($"Custom resolution set to {__0}x{__1}. Fullscreen = {__2}.");
+                return true;
             }
         }
 
