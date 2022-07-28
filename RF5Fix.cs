@@ -3,7 +3,9 @@ using BepInEx.Configuration;
 using BepInEx.IL2CPP;
 using BepInEx.Logging;
 using HarmonyLib;
+
 using System;
+
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,9 +54,9 @@ namespace RF5Fix
 
             fUpdateRate = Config.Bind("Physics Update Rate",
                                 "PhysicsUpdateRate",
-                                (float)240, // Default = 50
-                                new ConfigDescription("Set desired update rate. Default = 50. (You can raise this to improve camera smoothness for example.)",
-                                new AcceptableValueRange<float>(1f,9999f)));
+                                (float)0f, // 0 = Auto (Set to refresh rate) || Default = 50
+                                new ConfigDescription("Set desired update rate. This will improve camera smoothness in particular. \n 0 = Auto (Set to refresh rate). Game default = 50",
+                                new AcceptableValueRange<float>(0f,5000f)));
 
             bIntroSkip = Config.Bind("Intro Skip",
                                 "IntroSkip",
@@ -70,7 +72,7 @@ namespace RF5Fix
 
             fFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOV.Value",
-                                (float)50,
+                                (float)50f,
                                 new ConfigDescription("Set desired FOV.", 
                                 new AcceptableValueRange<float>(1f,180f)));
 
@@ -178,14 +180,6 @@ namespace RF5Fix
 
             // Run MiscellaneousPatch
             Harmony.CreateAndPatchAll(typeof(MiscellaneousPatch));
-
-            // Unity update rate
-            // TODO: Replace this with camera movement interpolation?
-            if (fUpdateRate.Value > 50)
-            {
-                Time.fixedDeltaTime = (float)1 / fUpdateRate.Value;
-                Log.LogInfo($"fixedDeltaTime set to {Time.fixedDeltaTime}");
-            }
 
         }
 
@@ -453,6 +447,19 @@ namespace RF5Fix
                     NpcSetting.ShowDistance = fNPCDistance.Value;
                     NpcSetting.HideDistance = fNPCDistance.Value;
                     Log.LogInfo($"NPC Distance set to {NpcSetting.ShowDistance}");
+                }
+
+                // Unity update rate
+                // TODO: Replace this with camera movement interpolation?
+                if (fUpdateRate.Value == 0) // Set update rate to screen refresh rate
+                {
+                    Time.fixedDeltaTime = (float)1 / Screen.currentResolution.refreshRate;
+                    Log.LogInfo($"fixedDeltaTime set to {(float)1} / {Screen.currentResolution.refreshRate} = {Time.fixedDeltaTime}");
+                }
+                else if (fUpdateRate.Value > 50)
+                {
+                    Time.fixedDeltaTime = (float)1 / fUpdateRate.Value;
+                    Log.LogInfo($"fixedDeltaTime set to {(float)1} / {fUpdateRate.Value} = {Time.fixedDeltaTime}");
                 }
 
             }

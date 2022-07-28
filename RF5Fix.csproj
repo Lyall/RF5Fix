@@ -22,9 +22,6 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>libs\Assembly-CSharp.stripped.dll</HintPath>
     </Reference>
-    <Reference Include="Cinemachine">
-      <HintPath>libs\Cinemachine.stripped.dll</HintPath>
-    </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>libs\Il2Cppmscorlib.stripped.dll</HintPath>
     </Reference>
