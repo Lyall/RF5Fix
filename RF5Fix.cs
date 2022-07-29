@@ -281,11 +281,8 @@ namespace RF5Fix
             }
 
             // Enable Letterboxing
-            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.Start))] // Calendar UI
-            [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.Start))] // Naming window
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.StartCamp))] // Camp menu
-            [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Start))] // Movie gallery
-            [HarmonyPatch(typeof(MapControl), nameof(MapControl.Start))] // Map
+            [HarmonyPatch(typeof(UILoader), nameof(UILoader.OpenCanvas))] // UILoader - Map, Calendar, Task Board, Movie Player, Shop etc
             [HarmonyPostfix]
             public static void EnableLetterboxing()
             {
@@ -295,11 +292,8 @@ namespace RF5Fix
 
             // Disable Letterboxing
             [HarmonyPatch(typeof(GameMain), nameof(GameMain.FieldLoadStart))] // Load game
-            [HarmonyPatch(typeof(UICalendarMenu), nameof(UICalendarMenu.OnDestroy))] // Calendar UI
-            [HarmonyPatch(typeof(UINamingWindow), nameof(UINamingWindow.OnDestroy))] // Naming window
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.CloseCamp))] // Camp menu
-            [HarmonyPatch(typeof(MovieRoom), nameof(MovieRoom.Close))] // Movie gallery
-            [HarmonyPatch(typeof(MapControl), nameof(MapControl.OnDestroy))] // Map
+            [HarmonyPatch(typeof(UILoader), nameof(UILoader.DoCloseCanvas))] // UILoader - Map, Calendar, Task Board, Movie Player, Shop etc
             [HarmonyPostfix]
             public static void DisableLetterboxing()
             {
