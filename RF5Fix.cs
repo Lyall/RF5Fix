@@ -68,7 +68,7 @@ namespace RF5Fix
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
                                 true, // True by default to enable Vert+ for narrow aspect ratios.
-                                "Set to true to enable adjustment of the FOV.");
+                                "Set to true to enable adjustment of the FOV. \n It will also adjust the FOV to be Vert+ if your aspect ratio is narrower than 16:9.");
 
             fAdditionalFOV = Config.Bind("FOV Adjustment",
                                 "AdditionalFOV.Value",
