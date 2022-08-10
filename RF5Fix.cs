@@ -19,6 +19,7 @@ namespace RF5Fix
         public static ConfigEntry<bool> bUltrawideFixes;
         public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<bool> bLetterboxing;
+        public static ConfigEntry<bool> bCampRenderTextureFix;
         public static ConfigEntry<bool> bFOVAdjust;
         public static ConfigEntry<float> fAdditionalFOV;
         public static ConfigEntry<float> fUpdateRate;
@@ -62,6 +63,11 @@ namespace RF5Fix
                                 "IntroSkip",
                                  true,
                                 "Skip intro logos.");
+
+            bCampRenderTextureFix = Config.Bind("Low-res Menu Fix",
+                               "LowResCharactersFix",
+                                true,
+                               "Fixes low-resolution 3D models in the equip menu/3D model viewer.");
 
             // Game Overrides
             bFOVAdjust = Config.Bind("FOV Adjustment",
@@ -244,31 +250,6 @@ namespace RF5Fix
                 }
             }
 
-            // Fix low res render textures
-            [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.Start))]
-            [HarmonyPostfix]
-            public static void EquipPreviewFix(CampMenuMain __instance)
-            {
-                // Render from UI camera at higher resolution and with anti-aliasing
-                float newHorizontalRes = Mathf.Floor(fDesiredResolutionY.Value * DefaultAspectRatio);
-                RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)fDesiredResolutionY.Value, 24, RenderTextureFormat.ARGB32);
-                rt.antiAliasing = QualitySettings.antiAliasing;
-                __instance.MyCamera.targetTexture = rt;
-                __instance.MyCamera.Render();
-
-                // Model viewer
-                GameObject modelPreview = __instance.ModelViewerMenu.transform.GetChild(1).gameObject;
-                RawImage modelPreviewRawImg = modelPreview.GetComponent<UnityEngine.UI.RawImage>();
-                modelPreviewRawImg.m_Texture = rt;
-
-                // Equipment view
-                GameObject equipPreview =  __instance.CenterMenuObj.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject;
-                RawImage equipPreviewRawImg = equipPreview.GetComponent<UnityEngine.UI.RawImage>();
-                equipPreviewRawImg.m_Texture = rt;
-
-                Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
-            }
-
             // Span UI load fade
             // Can't find a better way to hook this. It shouldn't impact performance much and even if it does it's only during UI loading fades.
             [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
@@ -360,6 +341,9 @@ namespace RF5Fix
         [HarmonyPatch]
         public class FOVPatch
         {
+            static float NewAspectRatio = (float)Screen.width / Screen.height;
+            static float DefaultAspectRatio = (float)16 / 9;
+
             static bool farmFOVHasRun = false;
             static bool trackingFOVHasRun = false;
 
@@ -369,9 +353,6 @@ namespace RF5Fix
             [HarmonyPostfix]
             static void TrackingFOV(PlayerTrackingCamera __instance)
             {
-                float NewAspectRatio = (float)Screen.width / Screen.height;
-                float DefaultAspectRatio = (float)16 / 9;
-
                 // Only run this once
                 if (!trackingFOVHasRun)
                 {
@@ -415,9 +396,6 @@ namespace RF5Fix
                 // Only run this once
                 if (!farmFOVHasRun)
                 {
-                    float NewAspectRatio = (float)Screen.width / Screen.height;
-                    float DefaultAspectRatio = (float)16 / 9;
-
                     var battleInst = BattleConst.Instance;
                     Log.LogInfo($"PlayerFarmingCamera: Current FOV = {battleInst.FarmCamera_FOV}.");
 
@@ -446,9 +424,6 @@ namespace RF5Fix
             [HarmonyPostfix]
             public static void GlobalFOV(Cinemachine.CinemachineVirtualCamera __instance)
             {
-                float NewAspectRatio = (float)Screen.width / Screen.height;
-                float DefaultAspectRatio = (float)16 / 9;
-
                 var currLens = __instance.m_Lens;
                 var currFOV = currLens.FieldOfView;
 
@@ -595,6 +570,37 @@ namespace RF5Fix
                     __instance.Light.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
                     //Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
                 }
+            }
+
+            // Fix low res render textures
+            [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.Start))]
+            [HarmonyPostfix]
+            public static void CampRenderTextureFix(CampMenuMain __instance)
+            {
+                if (bCampRenderTextureFix.Value)
+                {
+                    float DefaultAspectRatio = (float)16 / 9;
+
+                    // Render from UI camera at higher resolution and with anti-aliasing
+                    float newHorizontalRes = Mathf.Floor(fDesiredResolutionY.Value * DefaultAspectRatio);
+                    RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)fDesiredResolutionY.Value, 24, RenderTextureFormat.ARGB32);
+                    rt.antiAliasing = QualitySettings.antiAliasing;
+                    __instance.MyCamera.targetTexture = rt;
+                    __instance.MyCamera.Render();
+
+                    // Model viewer
+                    GameObject modelPreview = __instance.ModelViewerMenu.transform.GetChild(1).gameObject;
+                    RawImage modelPreviewRawImg = modelPreview.GetComponent<UnityEngine.UI.RawImage>();
+                    modelPreviewRawImg.m_Texture = rt;
+
+                    // Equipment view
+                    GameObject equipPreview = __instance.CenterMenuObj.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject;
+                    RawImage equipPreviewRawImg = equipPreview.GetComponent<UnityEngine.UI.RawImage>();
+                    equipPreviewRawImg.m_Texture = rt;
+
+                    Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
+                } 
+
             }
         }
     }
