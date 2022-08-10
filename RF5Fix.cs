@@ -6,6 +6,7 @@ using HarmonyLib;
 
 using System;
 
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,7 +21,7 @@ namespace RF5Fix
         public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<bool> bLetterboxing;
         public static ConfigEntry<bool> bFOVAdjust;
-        public static ConfigEntry<float> fFOVAdjust;
+        public static ConfigEntry<float> fAdditionalFOV;
         public static ConfigEntry<float> fUpdateRate;
         public static ConfigEntry<bool> bMouseSensitivity;
         public static ConfigEntry<int> iMouseSensitivity;
@@ -63,18 +64,17 @@ namespace RF5Fix
                                  true,
                                 "Skip intro logos.");
 
-
             // Game Overrides
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
                                 false, // Disable by default.
                                 "Set to true to enable adjustment of the FOV.");
 
-            fFOVAdjust = Config.Bind("FOV Adjustment",
-                                "FOV.Value",
-                                (float)50f,
-                                new ConfigDescription("Set desired FOV.", 
-                                new AcceptableValueRange<float>(1f,180f)));
+            fAdditionalFOV = Config.Bind("FOV Adjustment",
+                                "AdditionalFOV.Value",
+                                (float)0f,
+                                new ConfigDescription("Set additional FOV in degrees. This does not adjust FOV in cutscenes.", 
+                                new AcceptableValueRange<float>(0f,180f)));
 
             bMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Override",
@@ -108,7 +108,6 @@ namespace RF5Fix
                                  1,
                                 new ConfigDescription("Set window mode. 1 = Fullscreen, 2 = Borderless, 3 = Windowed.",
                                 new AcceptableValueRange<int>(1, 3)));
-
 
             // Graphical Settings
             iAnisotropicFiltering = Config.Bind("Graphical Tweaks", 
@@ -337,15 +336,116 @@ namespace RF5Fix
         [HarmonyPatch]
         public class FOVPatch
         {
-            // Player Tracking Camera FOV
-            //[HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.GetSetting), new Type[] { typeof(Define.TrackinCameraType) })]
-            [HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.GetSetting), new Type[] { })]
+            static bool farmFOVHasRun = false;
+            static bool trackingFOVHasRun = false;
+
+            // Adjust tracking camera FOV
+            // Indoor, outdoor, dungeon
+            [HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.Start))]
             [HarmonyPostfix]
-            public static void ChangePlayerTrackingFOV(PlayerTrackingCamera __instance)
+            static void TrackingFOV(PlayerTrackingCamera __instance)
             {
-                float FOV = fFOVAdjust.Value;
-                __instance.m_Setting.minFov = Mathf.Clamp(FOV, 1f, 180f);
-                //Log.LogInfo($"PlayerTrackingCamera FOV set to {__instance.m_Setting.minFov}");
+                float NewAspectRatio = (float)Screen.width / Screen.height;
+                float DefaultAspectRatio = (float)16 / 9;
+
+                // Only run this once
+                if (!trackingFOVHasRun)
+                {
+                    var InDoor = __instance.GetSetting(Define.TrackinCameraType.InDoor);
+                    var OutDoor = __instance.GetSetting(Define.TrackinCameraType.OutDoor);
+                    var Dangeon = __instance.GetSetting(Define.TrackinCameraType.Dangeon);
+
+                    Log.LogInfo($"Tracking Camera. Current InDoor FOV = {InDoor.minFov}. Current OutDoor FOV = {OutDoor.minFov}. Current Dangeon FOV = {Dangeon.minFov}");
+
+                    // Vert+ FOV
+                    if (NewAspectRatio < DefaultAspectRatio)
+                    {
+                        float newInDoorFOV = Mathf.Floor(Mathf.Atan(Mathf.Tan(InDoor.minFov * Mathf.PI / 360) / NewAspectRatio * DefaultAspectRatio) * 360 / Mathf.PI);
+                        float newOutDoorFOV = Mathf.Floor(Mathf.Atan(Mathf.Tan(OutDoor.minFov * Mathf.PI / 360) / NewAspectRatio * DefaultAspectRatio) * 360 / Mathf.PI);
+                        float newDangeonFOV = Mathf.Floor(Mathf.Atan(Mathf.Tan(Dangeon.minFov * Mathf.PI / 360) / NewAspectRatio * DefaultAspectRatio) * 360 / Mathf.PI);
+
+                        InDoor.minFov = newInDoorFOV;
+                        OutDoor.minFov = newOutDoorFOV;
+                        Dangeon.minFov = newDangeonFOV;
+
+                    }
+                    // Add FOV
+                    if (fAdditionalFOV.Value > 0f)
+                    {
+                        InDoor.minFov += fAdditionalFOV.Value;
+                        OutDoor.minFov += fAdditionalFOV.Value;
+                        Dangeon.minFov += fAdditionalFOV.Value;
+                    }
+
+                    Log.LogInfo($"Tracking Camera: New InDoor FOV = {InDoor.minFov}. New OutDoor FOV = {OutDoor.minFov}. New Dangeon FOV = {Dangeon.minFov}");
+                    trackingFOVHasRun = true;
+                }
+            }
+
+
+            // Farming FOV
+            [HarmonyPatch(typeof(PlayerFarmingCamera), nameof(PlayerFarmingCamera.Awake))]
+            [HarmonyPrefix]
+            public static void FarmingFOV(PlayerFarmingCamera __instance)
+            {
+                // Only run this once
+                if (!farmFOVHasRun)
+                {
+                    float NewAspectRatio = (float)Screen.width / Screen.height;
+                    float DefaultAspectRatio = (float)16 / 9;
+
+                    var battleInst = BattleConst.Instance;
+                    Log.LogInfo($"PlayerFarmingCamera: Current FOV = {battleInst.FarmCamera_FOV}.");
+
+                    // Vert+ FOV
+                    if (NewAspectRatio < DefaultAspectRatio)
+                    {
+                        float newFOV = Mathf.Floor(Mathf.Atan(Mathf.Tan(battleInst.FarmCamera_FOV * Mathf.PI / 360) / NewAspectRatio * DefaultAspectRatio) * 360 / Mathf.PI);
+                        battleInst.FarmCamera_FOV = newFOV;
+
+                    }
+                    // Add FOV
+                    if (fAdditionalFOV.Value > 0f)
+                    {
+                        battleInst.FarmCamera_FOV += fAdditionalFOV.Value;
+                    }
+
+                    Log.LogInfo($"PlayerFarmingCamera: New FOV = {battleInst.FarmCamera_FOV}.");
+                    farmFOVHasRun = true;
+                }
+            }
+
+            // FOV adjustment for every camera
+            // Does not effect tracking camera and farm camera, maybe more. They are forced to a specific FOV
+            // Adjust to Vert+ at narrower than 16:9
+            [HarmonyPatch(typeof(Cinemachine.CinemachineVirtualCamera), nameof(Cinemachine.CinemachineVirtualCamera.OnEnable))]
+            [HarmonyPostfix]
+            public static void GlobalFOV(Cinemachine.CinemachineVirtualCamera __instance)
+            {
+                float NewAspectRatio = (float)Screen.width / Screen.height;
+                float DefaultAspectRatio = (float)16 / 9;
+
+                var currLens = __instance.m_Lens;
+                var currFOV = currLens.FieldOfView;
+
+                Log.LogInfo($"Cinemachine VCam: Current camera name = {__instance.name}.");
+                Log.LogInfo($"Cinemachine VCam: Current camera FOV = {currFOV}.");
+
+                // Vert+ FOV
+                if (NewAspectRatio < DefaultAspectRatio)
+                {
+                    float newFOV = Mathf.Floor(Mathf.Atan(Mathf.Tan(currFOV * Mathf.PI / 360) / NewAspectRatio * DefaultAspectRatio) * 360 / Mathf.PI);
+                    currLens.FieldOfView = Mathf.Clamp(newFOV, 1f, 180f);
+                }
+                // Add FOV for everything but cutscenes
+                if (fAdditionalFOV.Value > 0f && __instance.name != "CMvcamCutBuffer" && __instance.name != "CMvcamShortPlay")
+                {
+                    currLens.FieldOfView += fAdditionalFOV.Value;
+                    Log.LogInfo($"Cinemachine VCam: Cam name = {__instance.name}. Added gameplay FOV = {fAdditionalFOV.Value}.");
+                }
+
+                __instance.m_Lens = currLens;
+                Log.LogInfo($"Cinemachine VCam: New camera FOV = {__instance.m_Lens.FieldOfView}.");
             }
         }
 
@@ -466,7 +566,7 @@ namespace RF5Fix
                 if (iShadowResolution.Value >= 64)
                 {
                     __instance.BodyLight.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                    Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
+                    //Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
                 } 
             }
 
@@ -478,7 +578,7 @@ namespace RF5Fix
                 if (iShadowResolution.Value >= 64)
                 {
                     __instance.Light.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                    Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
+                    //Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
                 }
             }
         }
