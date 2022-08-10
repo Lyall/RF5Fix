@@ -6,7 +6,6 @@ using HarmonyLib;
 
 using System;
 
-using Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -56,7 +55,7 @@ namespace RF5Fix
             fUpdateRate = Config.Bind("Physics Update Rate",
                                 "PhysicsUpdateRate",
                                 (float)0f, // 0 = Auto (Set to refresh rate) || Default = 50
-                                new ConfigDescription("Set desired update rate. This will improve camera smoothness in particular. \n 0 = Auto (Set to refresh rate). Game default = 50",
+                                new ConfigDescription("Set desired update rate. This will improve camera smoothness in particular. \n0 = Auto (Set to refresh rate). Game default = 50",
                                 new AcceptableValueRange<float>(0f,5000f)));
 
             bIntroSkip = Config.Bind("Intro Skip",
@@ -68,7 +67,7 @@ namespace RF5Fix
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
                                 true, // True by default to enable Vert+ for narrow aspect ratios.
-                                "Set to true to enable adjustment of the FOV. \n It will also adjust the FOV to be Vert+ if your aspect ratio is narrower than 16:9.");
+                                "Set to true to enable adjustment of the FOV. \nIt will also adjust the FOV to be Vert+ if your aspect ratio is narrower than 16:9.");
 
             fAdditionalFOV = Config.Bind("FOV Adjustment",
                                 "AdditionalFOV.Value",
@@ -456,22 +455,13 @@ namespace RF5Fix
             [HarmonyPrefix]
             public static bool SetCustomRes(ref int __0, ref int __1, ref BootOption.WindowMode __2)
             {
-                BootOption.WindowMode fullscreenMode;
-                switch (iWindowMode.Value)
+                var fullscreenMode = iWindowMode.Value switch
                 {
-                    case 1: 
-                        fullscreenMode = BootOption.WindowMode.FullScreen;
-                        break;
-                    case 2:
-                        fullscreenMode = BootOption.WindowMode.Borderless;
-                        break;
-                    case 3:
-                        fullscreenMode = BootOption.WindowMode.Window;
-                        break;
-                    default:
-                        fullscreenMode = BootOption.WindowMode.FullScreen;
-                        break;
-                }
+                    1 => BootOption.WindowMode.FullScreen,
+                    2 => BootOption.WindowMode.Borderless,
+                    3 => BootOption.WindowMode.Window,
+                    _ => BootOption.WindowMode.FullScreen,
+                };
 
                 Log.LogInfo($"Original resolution is {__0}x{__1}. Fullscreen = {__2}.");
 
