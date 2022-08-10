@@ -244,6 +244,31 @@ namespace RF5Fix
                 }
             }
 
+            // Fix low res render textures
+            [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.Start))]
+            [HarmonyPostfix]
+            public static void EquipPreviewFix(CampMenuMain __instance)
+            {
+                // Render from UI camera at higher resolution and with anti-aliasing
+                float newHorizontalRes = Mathf.Floor(fDesiredResolutionY.Value * DefaultAspectRatio);
+                RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)fDesiredResolutionY.Value, 24, RenderTextureFormat.ARGB32);
+                rt.antiAliasing = QualitySettings.antiAliasing;
+                __instance.MyCamera.targetTexture = rt;
+                __instance.MyCamera.Render();
+
+                // Model viewer
+                GameObject modelPreview = __instance.ModelViewerMenu.transform.GetChild(1).gameObject;
+                RawImage modelPreviewRawImg = modelPreview.GetComponent<UnityEngine.UI.RawImage>();
+                modelPreviewRawImg.m_Texture = rt;
+
+                // Equipment view
+                GameObject equipPreview =  __instance.CenterMenuObj.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject;
+                RawImage equipPreviewRawImg = equipPreview.GetComponent<UnityEngine.UI.RawImage>();
+                equipPreviewRawImg.m_Texture = rt;
+
+                Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
+            }
+
             // Span UI load fade
             // Can't find a better way to hook this. It shouldn't impact performance much and even if it does it's only during UI loading fades.
             [HarmonyPatch(typeof(UILoaderFade), nameof(UILoaderFade.Update))]
