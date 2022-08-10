@@ -67,7 +67,7 @@ namespace RF5Fix
             // Game Overrides
             bFOVAdjust = Config.Bind("FOV Adjustment",
                                 "FOVAdjustment",
-                                false, // Disable by default.
+                                true, // True by default to enable Vert+ for narrow aspect ratios.
                                 "Set to true to enable adjustment of the FOV.");
 
             fAdditionalFOV = Config.Bind("FOV Adjustment",
