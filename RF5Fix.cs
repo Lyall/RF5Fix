@@ -5,7 +5,6 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using System;
-
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +19,7 @@ namespace RF5Fix
         public static ConfigEntry<bool> bIntroSkip;
         public static ConfigEntry<bool> bLetterboxing;
         public static ConfigEntry<bool> bCampRenderTextureFix;
+        public static ConfigEntry<bool> bDisableCrossHatching;
         public static ConfigEntry<bool> bFOVAdjust;
         public static ConfigEntry<float> fAdditionalFOV;
         public static ConfigEntry<float> fUpdateRate;
@@ -53,21 +53,26 @@ namespace RF5Fix
                                  true,
                                 "Letterboxes UI (not gameplay). Set to false to disable letterboxing everywhere.");
 
-            fUpdateRate = Config.Bind("Physics Update Rate",
+            fUpdateRate = Config.Bind("General",
                                 "PhysicsUpdateRate",
                                 (float)0f, // 0 = Auto (Set to refresh rate) || Default = 50
                                 new ConfigDescription("Set desired update rate. This will improve camera smoothness in particular. \n0 = Auto (Set to refresh rate). Game default = 50",
                                 new AcceptableValueRange<float>(0f,5000f)));
 
-            bIntroSkip = Config.Bind("Intro Skip",
+            bIntroSkip = Config.Bind("General",
                                 "IntroSkip",
                                  true,
                                 "Skip intro logos.");
 
-            bCampRenderTextureFix = Config.Bind("Low-res Menu Fix",
-                               "LowResCharactersFix",
+            bCampRenderTextureFix = Config.Bind("General",
+                               "LowResMenuFix",
                                 true,
                                "Fixes low-resolution 3D models in the equip menu/3D model viewer.");
+
+            bDisableCrossHatching = Config.Bind("General",
+                               "DisableCrossHatching",
+                                false,
+                               "Set to true to disable the crosshatch/sketch effect.");
 
             // Game Overrides
             bFOVAdjust = Config.Bind("FOV Adjustment",
@@ -302,7 +307,7 @@ namespace RF5Fix
             public static void DisableLetterboxing()
             {
                 letterboxing.SetActive(false);
-                Log.LogInfo("Disabled UI letterboxing.");
+                Log.LogInfo("Disabled UI letterboxing.");              
             }
         }
 
@@ -582,8 +587,8 @@ namespace RF5Fix
                     float DefaultAspectRatio = (float)16 / 9;
 
                     // Render from UI camera at higher resolution and with anti-aliasing
-                    float newHorizontalRes = Mathf.Floor(fDesiredResolutionY.Value * DefaultAspectRatio);
-                    RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)fDesiredResolutionY.Value, 24, RenderTextureFormat.ARGB32);
+                    float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
+                    RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
                     rt.antiAliasing = QualitySettings.antiAliasing;
                     __instance.MyCamera.targetTexture = rt;
                     __instance.MyCamera.Render();
@@ -599,8 +604,22 @@ namespace RF5Fix
                     equipPreviewRawImg.m_Texture = rt;
 
                     Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
-                } 
+                }
+            }
 
+            // Disable Hatching
+            [HarmonyPatch(typeof(MeshFadeController), nameof(MeshFadeController.OnEnable))]
+            [HarmonyPostfix]
+            public static void DisableHatching(MeshFadeController __instance)
+            {
+                if (bDisableCrossHatching.Value)
+                {
+                    // This is super hacky
+                    var meshRenderer = __instance.Renderers[0];
+                    var sketchTex = meshRenderer.material.GetTexture("_SketchTex");
+                    sketchTex.wrapMode = TextureWrapMode.Clamp;
+                }
+                
             }
         }
     }
