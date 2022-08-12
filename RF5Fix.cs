@@ -5,8 +5,10 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace RF5Fix
 {
@@ -593,15 +595,33 @@ namespace RF5Fix
                     __instance.MyCamera.targetTexture = rt;
                     __instance.MyCamera.Render();
 
-                    // Model viewer
-                    GameObject modelPreview = __instance.ModelViewerMenu.transform.GetChild(1).gameObject;
-                    RawImage modelPreviewRawImg = modelPreview.GetComponent<UnityEngine.UI.RawImage>();
-                    modelPreviewRawImg.m_Texture = rt;
+                    // Find raw images, even inactive ones
+                    // This is probably quite performance intesive, however CampMenuMain.Start only runs once as the game loads so it shouldn't harm things.
+                    // There's probably a better way to do this.
+                    List<RawImage> rawImages = new List<RawImage>();
+                    for (int i = 0; i < SceneManager.sceneCount; i++)
+                    {
+                        var s = SceneManager.GetSceneAt(i);
+                        if (s.isLoaded)
+                        {
+                            var allGameObjects = s.GetRootGameObjects();
+                            for (int j = 0; j < allGameObjects.Length; j++)
+                            {
+                                var go = allGameObjects[j];
+                                rawImages.AddRange(go.GetComponentsInChildren<RawImage>(true));
+                            }
+                        }
+                    }
 
-                    // Equipment view
-                    GameObject equipPreview = __instance.CenterMenuObj.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject;
-                    RawImage equipPreviewRawImg = equipPreview.GetComponent<UnityEngine.UI.RawImage>();
-                    equipPreviewRawImg.m_Texture = rt;
+                    // Find RawImages that use UICameraRenderTexture
+                    foreach (RawImage rawImage in rawImages)
+                    {
+                        if (rawImage.m_Texture.name == "UICameraRenderTexture")
+                        {
+                            rawImage.m_Texture = rt;
+                            Log.LogInfo($"Set {rawImage.gameObject.GetParent().name} texture to new high-res render texture.");
+                        }
+                    }
 
                     Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
                 }
