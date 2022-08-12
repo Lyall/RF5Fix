@@ -7,6 +7,9 @@ This BepInEx plugin for the game Rune Factory 5 features:
 - Intro/logos skip.
 - Graphical tweaks to increase fidelity.
 - Adjusting field of view.
+- Vert+ FOV at narrower than 16:9 aspect ratios.
+- High-res character preview in menus.
+- Ability to disable cross-hatching effect.
 - Overriding mouse sensitivity.
 
 ## Installation
