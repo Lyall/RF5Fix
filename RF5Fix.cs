@@ -59,7 +59,7 @@ namespace RF5Fix
                                 "PhysicsUpdateRate",
                                 (float)0f, // 0 = Auto (Set to refresh rate) || Default = 50
                                 new ConfigDescription("Set desired update rate. This will improve camera smoothness in particular. \n0 = Auto (Set to refresh rate). Game default = 50",
-                                new AcceptableValueRange<float>(0f,5000f)));
+                                new AcceptableValueRange<float>(0f, 5000f)));
 
             bIntroSkip = Config.Bind("General",
                                 "IntroSkip",
@@ -85,8 +85,8 @@ namespace RF5Fix
             fAdditionalFOV = Config.Bind("FOV Adjustment",
                                 "AdditionalFOV.Value",
                                 (float)0f,
-                                new ConfigDescription("Set additional FOV in degrees. This does not adjust FOV in cutscenes.", 
-                                new AcceptableValueRange<float>(0f,180f)));
+                                new ConfigDescription("Set additional FOV in degrees. This does not adjust FOV in cutscenes.",
+                                new AcceptableValueRange<float>(0f, 180f)));
 
             bMouseSensitivity = Config.Bind("Mouse Sensitivity",
                                 "MouseSensitivity.Override",
@@ -97,7 +97,7 @@ namespace RF5Fix
                                 "MouseSensitivity.Value",
                                 (int)100, // Default = 100
                                 new ConfigDescription("Set desired mouse sensitivity.",
-                                new AcceptableValueRange<int>(1,9999)));
+                                new AcceptableValueRange<int>(1, 9999)));
 
             // Custom Resolution
             bCustomResolution = Config.Bind("Set Custom Resolution",
@@ -122,10 +122,10 @@ namespace RF5Fix
                                 new AcceptableValueRange<int>(1, 3)));
 
             // Graphical Settings
-            iAnisotropicFiltering = Config.Bind("Graphical Tweaks", 
-                                "AnisotropicFiltering.Value", 
-                                (int)1, 
-                                new ConfigDescription("Set Anisotropic Filtering level. 16 is recommended for quality.", 
+            iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
+                                "AnisotropicFiltering.Value",
+                                (int)1,
+                                new ConfigDescription("Set Anisotropic Filtering level. 16 is recommended for quality.",
                                 new AcceptableValueRange<int>(1, 16)));
 
             fLODBias = Config.Bind("Graphical Tweaks",
@@ -272,7 +272,7 @@ namespace RF5Fix
                 {
                     // Increase width to scale correctly
                     __instance.gameObject.transform.localScale = new Vector3(1 * AspectMultiplier, 1f, 1f);
-                } 
+                }
             }
 
         }
@@ -309,7 +309,7 @@ namespace RF5Fix
             public static void DisableLetterboxing()
             {
                 letterboxing.SetActive(false);
-                Log.LogInfo("Disabled UI letterboxing.");              
+                Log.LogInfo("Disabled UI letterboxing.");
             }
         }
 
@@ -484,6 +484,8 @@ namespace RF5Fix
         [HarmonyPatch]
         public class MiscellaneousPatch
         {
+            public static RenderTexture rt;
+
             // Load game settings
             [HarmonyPatch(typeof(BootSystem), nameof(BootSystem.ApplyOption))]
             [HarmonyPostfix]
@@ -564,7 +566,7 @@ namespace RF5Fix
                 {
                     __instance.BodyLight.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
                     //Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
-                } 
+                }
             }
 
             // RealtimeBakeLight | Shadow Resolution
@@ -581,22 +583,30 @@ namespace RF5Fix
 
             // Fix low res render textures
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.Start))]
+            [HarmonyPatch(typeof(UIMonsterNaming), nameof(UIMonsterNaming.Start))]
             [HarmonyPostfix]
             public static void CampRenderTextureFix(CampMenuMain __instance)
             {
                 if (bCampRenderTextureFix.Value)
                 {
-                    float DefaultAspectRatio = (float)16 / 9;
+                    if (!rt)
+                    {
+                        float DefaultAspectRatio = (float)16 / 9;
 
-                    // Render from UI camera at higher resolution and with anti-aliasing
-                    float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
-                    RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
-                    rt.antiAliasing = QualitySettings.antiAliasing;
-                    __instance.MyCamera.targetTexture = rt;
-                    __instance.MyCamera.Render();
+                        // Render from UI camera at higher resolution and with anti-aliasing
+                        float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
+                        rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
+                        rt.antiAliasing = QualitySettings.antiAliasing;
+
+                        var UICam = UIMainManager.Instance.GetComponent<Camera>(UIMainManager.AttachId.UICamera);
+                        UICam.targetTexture = rt;
+                        UICam.Render();
+
+                        Log.LogInfo($"Created new render texture for UI Camera.");
+                    }
 
                     // Find raw images, even inactive ones
-                    // This is probably quite performance intesive, however CampMenuMain.Start only runs once as the game loads so it shouldn't harm things.
+                    // This is probably quite performance intensive.
                     // There's probably a better way to do this.
                     List<RawImage> rawImages = new List<RawImage>();
                     for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -622,8 +632,6 @@ namespace RF5Fix
                             Log.LogInfo($"Set {rawImage.gameObject.GetParent().name} texture to new high-res render texture.");
                         }
                     }
-
-                    Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
                 }
             }
 
@@ -639,7 +647,7 @@ namespace RF5Fix
                     var sketchTex = meshRenderer.material.GetTexture("_SketchTex");
                     sketchTex.wrapMode = TextureWrapMode.Clamp;
                 }
-                
+
             }
         }
     }
