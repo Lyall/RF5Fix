@@ -484,6 +484,8 @@ namespace RF5Fix
         [HarmonyPatch]
         public class MiscellaneousPatch
         {
+            public static RenderTexture rt;
+
             // Load game settings
             [HarmonyPatch(typeof(BootSystem), nameof(BootSystem.ApplyOption))]
             [HarmonyPostfix]
@@ -581,22 +583,30 @@ namespace RF5Fix
 
             // Fix low res render textures
             [HarmonyPatch(typeof(CampMenuMain), nameof(CampMenuMain.Start))]
+            [HarmonyPatch(typeof(UIMonsterNaming), nameof(UIMonsterNaming.Start))]
             [HarmonyPostfix]
             public static void CampRenderTextureFix(CampMenuMain __instance)
             {
                 if (bCampRenderTextureFix.Value)
                 {
-                    float DefaultAspectRatio = (float)16 / 9;
+                    if (!rt)
+                    {
+                        float DefaultAspectRatio = (float)16 / 9;
 
-                    // Render from UI camera at higher resolution and with anti-aliasing
-                    float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
-                    RenderTexture rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
-                    rt.antiAliasing = QualitySettings.antiAliasing;
-                    __instance.MyCamera.targetTexture = rt;
-                    __instance.MyCamera.Render();
+                        // Render from UI camera at higher resolution and with anti-aliasing
+                        float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
+                        rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
+                        rt.antiAliasing = QualitySettings.antiAliasing;
+
+                        var UICam = UIMainManager.Instance.GetComponent<Camera>(UIMainManager.AttachId.UICamera);
+                        UICam.targetTexture = rt;
+                        UICam.Render();
+
+                        Log.LogInfo($"Created new render texture for UI Camera.");
+                    }
 
                     // Find raw images, even inactive ones
-                    // This is probably quite performance intesive, however CampMenuMain.Start only runs once as the game loads so it shouldn't harm things.
+                    // This is probably quite performance intensive.
                     // There's probably a better way to do this.
                     List<RawImage> rawImages = new List<RawImage>();
                     for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -622,10 +632,8 @@ namespace RF5Fix
                             Log.LogInfo($"Set {rawImage.gameObject.GetParent().name} texture to new high-res render texture.");
                         }
                     }
-
-                    Log.LogInfo($"Re-rendered low-res render textures in camp menu.");
                 }
-            }
+            }   
 
             // Disable Hatching
             [HarmonyPatch(typeof(MeshFadeController), nameof(MeshFadeController.OnEnable))]
