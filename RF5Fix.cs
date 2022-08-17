@@ -6,9 +6,10 @@ using HarmonyLib;
 
 using System;
 using System.Collections.Generic;
+
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace RF5Fix
 {
@@ -37,6 +38,8 @@ namespace RF5Fix
         public static ConfigEntry<float> fDesiredResolutionX;
         public static ConfigEntry<float> fDesiredResolutionY;
         public static ConfigEntry<int> iWindowMode;
+        public static ConfigEntry<bool> bControllerType;
+        public static ConfigEntry<string> sControllerType;
 
         public override void Load()
         {
@@ -99,6 +102,17 @@ namespace RF5Fix
                                 new ConfigDescription("Set desired mouse sensitivity.",
                                 new AcceptableValueRange<int>(1, 9999)));
 
+            bControllerType = Config.Bind("Controller Icon Override",
+                                "ControllerType.Override",
+                                false, // Disable by default.
+                                "Set to true to enable controller icon override.");
+
+            sControllerType = Config.Bind("Controller Icon Override",
+                                "ControllerType",
+                                "Xbox",
+                                new ConfigDescription("Set desired controller icon type.",
+                                new AcceptableValueList<string>("Xbox", "PS4", "PS5", "Switch")));
+
             // Custom Resolution
             bCustomResolution = Config.Bind("Set Custom Resolution",
                                 "CustomResolution",
@@ -117,7 +131,7 @@ namespace RF5Fix
 
             iWindowMode = Config.Bind("Set Custom Resolution",
                                 "WindowMode",
-                                 1,
+                                 (int)1,
                                 new ConfigDescription("Set window mode. 1 = Fullscreen, 2 = Borderless, 3 = Windowed.",
                                 new AcceptableValueRange<int>(1, 3)));
 
@@ -187,6 +201,12 @@ namespace RF5Fix
             if (bFOVAdjust.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(FOVPatch));
+            }
+
+            // Run ControllerPatch
+            if (bControllerType.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(ControllerPatch));
             }
 
             // Run MiscellaneousPatch
@@ -348,17 +368,17 @@ namespace RF5Fix
         [HarmonyPatch]
         public class FOVPatch
         {
-            static float NewAspectRatio = (float)Screen.width / Screen.height;
-            static float DefaultAspectRatio = (float)16 / 9;
-
-            static bool farmFOVHasRun = false;
-            static bool trackingFOVHasRun = false;
+            public static float NewAspectRatio = (float)Screen.width / Screen.height;
+            public static float DefaultAspectRatio = (float)16 / 9;
+            
+            public static bool farmFOVHasRun = false;
+            public static bool trackingFOVHasRun = false;
 
             // Adjust tracking camera FOV
             // Indoor, outdoor, dungeon
             [HarmonyPatch(typeof(PlayerTrackingCamera), nameof(PlayerTrackingCamera.Start))]
             [HarmonyPostfix]
-            static void TrackingFOV(PlayerTrackingCamera __instance)
+            public static void TrackingFOV(PlayerTrackingCamera __instance)
             {
                 // Only run this once
                 if (!trackingFOVHasRun)
@@ -481,6 +501,28 @@ namespace RF5Fix
             }
         }
 
+
+        [HarmonyPatch]
+        public class ControllerPatch
+        {
+            // Spoof RF5's steam input controller type
+            [HarmonyPatch(typeof(RF5SteamInput.SteamInputManager), nameof(RF5SteamInput.SteamInputManager.GetConnectingControllerType))]
+            [HarmonyPostfix]
+            public static void Glyphy(RF5SteamInput.SteamInputManager __instance, ref RF5SteamInput.SteamInputManager.ControllerType __result)
+            {
+                var controllerType = sControllerType.Value switch
+                {
+                    "Xbox" => RF5SteamInput.SteamInputManager.ControllerType.Xbox,
+                    "PS4" => RF5SteamInput.SteamInputManager.ControllerType.PS4,
+                    "PS5" => RF5SteamInput.SteamInputManager.ControllerType.PS5,
+                    "Switch" => RF5SteamInput.SteamInputManager.ControllerType.Switch,
+                    _ => RF5SteamInput.SteamInputManager.ControllerType.Default,
+                };
+
+                __result = controllerType;
+            }
+        }
+
         [HarmonyPatch]
         public class MiscellaneousPatch
         {
@@ -565,7 +607,6 @@ namespace RF5Fix
                 if (iShadowResolution.Value >= 64)
                 {
                     __instance.BodyLight.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                    //Log.LogInfo($"Set light.shadowCustomResolution to {__instance.BodyLight.shadowCustomResolution}.");
                 }
             }
 
@@ -577,7 +618,6 @@ namespace RF5Fix
                 if (iShadowResolution.Value >= 64)
                 {
                     __instance.Light.shadowCustomResolution = iShadowResolution.Value; // Default = ShadowQuality (i.e VeryHigh = 4096)
-                    //Log.LogInfo($"Set RealtimeBakeLight.light.shadowCustomResolution to {__instance.Light.shadowCustomResolution}.");
                 }
             }
 
@@ -597,7 +637,7 @@ namespace RF5Fix
                         float newHorizontalRes = Mathf.Floor(Screen.currentResolution.height * DefaultAspectRatio);
                         rt = new RenderTexture((int)newHorizontalRes, (int)Screen.currentResolution.height, 24, RenderTextureFormat.ARGB32);
                         rt.antiAliasing = QualitySettings.antiAliasing;
-
+                
                         var UICam = UIMainManager.Instance.GetComponent<Camera>(UIMainManager.AttachId.UICamera);
                         UICam.targetTexture = rt;
                         UICam.Render();
