@@ -111,7 +111,7 @@ namespace RF5Fix
                                 "ControllerType",
                                 "Xbox",
                                 new ConfigDescription("Set desired controller icon type.",
-                                new AcceptableValueList<string>("Xbox", "PS4", "PS5", "Switch")));
+                                new AcceptableValueList<string>("Xbox", "PS4", "PS5", "Switch"))); // Others are broken/invalid
 
             // Custom Resolution
             bCustomResolution = Config.Bind("Set Custom Resolution",
@@ -512,10 +512,14 @@ namespace RF5Fix
             {
                 var controllerType = sControllerType.Value switch
                 {
-                    "Xbox" => RF5SteamInput.SteamInputManager.ControllerType.Xbox,
-                    "PS4" => RF5SteamInput.SteamInputManager.ControllerType.PS4,
-                    "PS5" => RF5SteamInput.SteamInputManager.ControllerType.PS5,
-                    "Switch" => RF5SteamInput.SteamInputManager.ControllerType.Switch,
+                    "Xbox" => RF5SteamInput.SteamInputManager.ControllerType.Xbox, // Yes
+                    "PS4" => RF5SteamInput.SteamInputManager.ControllerType.PS4, // Yes
+                    "PS5" => RF5SteamInput.SteamInputManager.ControllerType.PS5, // Yes
+                    "Switch" => RF5SteamInput.SteamInputManager.ControllerType.Switch, // Yes
+                    "Keyboard" => RF5SteamInput.SteamInputManager.ControllerType.Keyboard, // Nope, keyboard glyphs are loaded differently.
+                    "Max" => RF5SteamInput.SteamInputManager.ControllerType.Max, // Broken?
+                    "None" => RF5SteamInput.SteamInputManager.ControllerType.None, // Broken?
+                    "Default" => RF5SteamInput.SteamInputManager.ControllerType.Default, // Xbox (One) Glyphs
                     _ => RF5SteamInput.SteamInputManager.ControllerType.Default,
                 };
 
