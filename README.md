@@ -10,6 +10,7 @@ This BepInEx plugin for the game Rune Factory 5 features:
 - Vert+ FOV at narrower than 16:9 aspect ratios.
 - High quality model previews in menus.
 - Ability to disable cross-hatching effect.
+- Overriding controller icons/glyphs.
 - Overriding mouse sensitivity.
 
 ## Installation
