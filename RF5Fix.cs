@@ -17,9 +17,9 @@ namespace RF5Fix
     [BepInProcess(GAME_PROCESS)]
     public class RF5 : BasePlugin
     {
-        // For some reason, we have to do it this way, because BepInEx cries about the GUID relative to the version name (For example: Skipping [RF5Fix 0.1.4] because a newer version exists (RF5Fix 0.1.4)).
+        // For some reason, we have to do it this way, because BepInEx cries about the GUID relative to the version name (For example: Skipping [RF5Fix 0.1.4] because a newer version exists (RF5Fix 0.1.4)). Changing the GUID messes with the config file name.
         #region PluginInfo
-        private const string PLUGIN_GUID = "1722F451-CB9C-407C-8C69-3B299901BEE8";
+        private const string PLUGIN_GUID = "RF5Fix";
         private const string PLUGIN_NAME = "RF5Fix";
         private const string PLUGIN_VERSION = "0.1.5";
         private const string GAME_PROCESS = "Rune Factory 5.exe";
