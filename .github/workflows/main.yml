@@ -15,7 +15,7 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with: 
         dotnet-version: '6.0.x'
-    - run: echo "name=URL=$(curl -vs https://builds.bepinex.dev/projects/bepinex_be 2>&1 | grep -Po '(?<=href=")(\/projects\/bepinex_be\/(.*)\/BepInEx-Unity.IL2CPP-win-x64(.*))(?=")' | head -1)" >> $GITHUB_OUTPUT
+    - run: echo "URL=$(curl -vs https://builds.bepinex.dev/projects/bepinex_be 2>&1 | grep -Po '(?<=href=")(\/projects\/bepinex_be\/(.*)\/BepInEx-Unity.IL2CPP-win-x64(.*))(?=")' | head -1)" >> $GITHUB_OUTPUT
       id: bepinexurl
     - run: wget https://builds.bepinex.dev${{ steps.bepinexurl.outputs.URL}}
     - run: mkdir -p ${{ github.event.repository.name }}/BepInEx/plugins
