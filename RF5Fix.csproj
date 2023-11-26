@@ -22,19 +22,19 @@
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>libs\Assembly-CSharp.dll</HintPath>
+      <HintPath>libs\Assembly-CSharp.stripped.dll</HintPath>
     </Reference>
     <Reference Include="Cinemachine">
-      <HintPath>libs\Cinemachine.dll</HintPath>
+      <HintPath>libs\Cinemachine.stripped.dll</HintPath>
     </Reference>
     <Reference Include="Il2Cppmscorlib">
-      <HintPath>libs\Il2Cppmscorlib.dll</HintPath>
+      <HintPath>libs\Il2Cppmscorlib.stripped.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>libs\UnityEngine.CoreModule.stripped.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>libs\UnityEngine.UI.dll</HintPath>
+      <HintPath>libs\UnityEngine.UI.stripped.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
