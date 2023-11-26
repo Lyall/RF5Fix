@@ -1,6 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.IL2CPP;
+using BepInEx.Unity.IL2CPP;
 using BepInEx.Logging;
 using HarmonyLib;
 
@@ -13,9 +13,18 @@ using UnityEngine.UI;
 
 namespace RF5Fix
 {
-    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
+    [BepInProcess(GAME_PROCESS)]
     public class RF5 : BasePlugin
     {
+        // For some reason, we have to do it this way, because BepInEx cries about the GUID relative to the version name (For example: Skipping [RF5Fix 0.1.4] because a newer version exists (RF5Fix 0.1.4)). Changing the GUID messes with the config file name.
+        #region PluginInfo
+        private const string PLUGIN_GUID = "RF5Fix";
+        private const string PLUGIN_NAME = "RF5Fix";
+        private const string PLUGIN_VERSION = "0.1.5";
+        private const string GAME_PROCESS = "Rune Factory 5.exe";
+        #endregion
+
         internal static new ManualLogSource Log;
 
         public static ConfigEntry<bool> bUltrawideFixes;
@@ -45,7 +54,7 @@ namespace RF5Fix
         {
             // Plugin startup logic
             Log = base.Log;
-            Log.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
+            Log.LogInfo($"Plugin {PLUGIN_NAME} is loaded!");
 
             // Features
             bUltrawideFixes = Config.Bind("Ultrawide UI Fixes",
